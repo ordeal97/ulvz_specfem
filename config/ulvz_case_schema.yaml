@@ -1,0 +1,221 @@
+schema_version: "1.0"
+description: "Schema for synthetic CMB ULVZ case configuration."
+
+required_sections:
+  - metadata
+  - coordinate_conventions
+  - background_model
+  - ulvz
+  - output
+
+metadata:
+  required:
+    case_id:
+      type: string
+      pattern: "^[A-Za-z0-9_.-]+$"
+      description: "Unique case identifier used in run directories and logs."
+    description:
+      type: string
+      description: "Short human-readable description of the case."
+    created_by:
+      type: string
+      description: "Name, username, or workflow that created this case."
+  optional:
+    created_utc:
+      type: string
+      format: "YYYY-MM-DDTHH:MM:SSZ"
+      description: "UTC timestamp when the file was created."
+    parent_case_id:
+      type: string
+      description: "Reference/background case from which this ULVZ case is derived."
+
+coordinate_conventions:
+  required:
+    latitude_type:
+      type: string
+      allowed: ["geographic", "geocentric"]
+      description: "Latitude convention used by all latitude fields."
+    longitude_range:
+      type: string
+      allowed: ["-180_to_180", "0_to_360"]
+      description: "Longitude normalization expected by this configuration."
+    angular_units:
+      type: string
+      allowed: ["degrees"]
+    length_units:
+      type: string
+      allowed: ["km"]
+    perturbation_units:
+      type: string
+      allowed: ["fraction"]
+      description: "Fractional perturbation, e.g. -0.10 means -10 percent."
+    radius_reference:
+      type: string
+      allowed: ["planet_center"]
+      description: "Radii are measured from the planet center."
+    cmb_reference:
+      type: string
+      allowed: ["top_of_outer_core"]
+      description: "CMB radius is the radius of the core-mantle boundary."
+  optional:
+    notes:
+      type: string
+
+background_model:
+  required:
+    specfem_root:
+      type: string
+      description: "Path to the SPECFEM3D_GLOBE tree relative to the project root."
+    par_file:
+      type: string
+      description: "Reference Par_file used to generate the unperturbed mesh/database."
+    model_name:
+      type: string
+      description: "Background model name from DATA/Par_file."
+  optional:
+    mesh_database:
+      type: string
+      description: "Path to the reference DATABASES_MPI directory, if already generated."
+    reference_case_id:
+      type: string
+      description: "Identifier for the matching unperturbed reference case."
+
+ulvz:
+  required:
+    name:
+      type: string
+    center:
+      required:
+        latitude:
+          type: number
+          units: degrees
+          range: [-90.0, 90.0]
+        longitude:
+          type: number
+          units: degrees
+        cmb_radius:
+          type: number
+          units: km
+          min_exclusive: 0.0
+          description: "CMB radius at the ULVZ reference point."
+    geometry:
+      required:
+        shape:
+          type: string
+          allowed: ["circular_cap", "elliptical_cap"]
+        thickness:
+          type: number
+          units: km
+          min_exclusive: 0.0
+          description: "Vertical thickness above the CMB."
+        lateral_radius:
+          type: number
+          units: km
+          min_exclusive: 0.0
+          description: "Horizontal radius for circular cap, or semi-major radius for elliptical cap."
+      optional:
+        ellipticity:
+          required_if:
+            geometry.shape: "elliptical_cap"
+          fields:
+            enabled:
+              type: boolean
+            minor_radius:
+              type: number
+              units: km
+              min_exclusive: 0.0
+            major_axis_azimuth:
+              type: number
+              units: degrees_clockwise_from_north
+              range: [0.0, 360.0]
+    perturbations:
+      required:
+        d_vp:
+          type: number
+          units: fraction
+          description: "Fractional P-wave speed perturbation inside the ULVZ."
+        d_vs:
+          type: number
+          units: fraction
+          description: "Fractional S-wave speed perturbation inside the ULVZ."
+        d_rho:
+          type: number
+          units: fraction
+          description: "Fractional density perturbation inside the ULVZ."
+      optional:
+        applies_to:
+          type: string
+          allowed: ["isotropic", "transverse_isotropic_components"]
+          default: "isotropic"
+    taper:
+      required:
+        enabled:
+          type: boolean
+        style:
+          type: string
+          allowed: ["cosine", "raised_cosine", "smoothstep"]
+        lateral_width:
+          type: number
+          units: km
+          min: 0.0
+        vertical_width:
+          type: number
+          units: km
+          min: 0.0
+      optional:
+        apply_to_top:
+          type: boolean
+          default: true
+        apply_to_bottom_cmb:
+          type: boolean
+          default: false
+          description: "Usually false because the ULVZ is bounded by the CMB."
+    orientation:
+      optional:
+        rotation:
+          fields:
+            enabled:
+              type: boolean
+            azimuth:
+              type: number
+              units: degrees_clockwise_from_north
+              range: [0.0, 360.0]
+              description: "Horizontal rotation of the anomaly footprint."
+        tilt:
+          fields:
+            enabled:
+              type: boolean
+            plunge:
+              type: number
+              units: degrees
+              range: [-90.0, 90.0]
+              description: "Tilt angle of the ULVZ vertical axis from local radial direction."
+            azimuth:
+              type: number
+              units: degrees_clockwise_from_north
+              range: [0.0, 360.0]
+              description: "Azimuth toward which the ULVZ axis tilts."
+
+output:
+  required:
+    case_directory:
+      type: string
+      description: "Directory where generated case files should be written."
+    model_record:
+      type: string
+      description: "Machine-readable record copied with generated model outputs."
+    preserve_background:
+      type: boolean
+      must_be: true
+  optional:
+    notes:
+      type: string
+
+validation_rules:
+  - "Do not modify SPECFEM source code when applying this schema."
+  - "Do not overwrite the background mesh/database."
+  - "thickness must be smaller than the mantle thickness above cmb_radius."
+  - "taper.lateral_width must be less than geometry.lateral_radius."
+  - "taper.vertical_width must be less than or equal to geometry.thickness."
+  - "For circular_cap, geometry.lateral_radius is the cap radius in km."
+  - "For elliptical_cap, geometry.lateral_radius is the semi-major axis and ellipticity.minor_radius is the semi-minor axis."

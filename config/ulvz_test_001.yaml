@@ -1,0 +1,64 @@
+metadata:
+  case_id: "ulvz_test_001"
+  description: "Synthetic circular CMB ULVZ test case for workflow validation."
+  created_by: "codex"
+  created_utc: "2026-06-26T00:00:00Z"
+  parent_case_id: "reference_current_setup"
+
+coordinate_conventions:
+  latitude_type: "geographic"
+  longitude_range: "-180_to_180"
+  angular_units: "degrees"
+  length_units: "km"
+  perturbation_units: "fraction"
+  radius_reference: "planet_center"
+  cmb_reference: "top_of_outer_core"
+  notes: "Depth increases downward from the free surface; ULVZ thickness is measured upward from the CMB into the lowermost mantle."
+
+background_model:
+  specfem_root: "specfem3d_globe"
+  par_file: "specfem3d_globe/DATA/Par_file"
+  model_name: "1D_isotropic_prem"
+  mesh_database: "specfem3d_globe/DATABASES_MPI"
+  reference_case_id: "reference_current_setup"
+
+ulvz:
+  name: "test_circular_cmb_ulvz"
+  center:
+    latitude: 40.0
+    longitude: 25.0
+    cmb_radius: 3480.0
+  geometry:
+    shape: "circular_cap"
+    thickness: 20.0
+    lateral_radius: 250.0
+    ellipticity:
+      enabled: false
+      minor_radius: null
+      major_axis_azimuth: null
+  perturbations:
+    d_vp: -0.10
+    d_vs: -0.30
+    d_rho: 0.10
+    applies_to: "isotropic"
+  taper:
+    enabled: true
+    style: "raised_cosine"
+    lateral_width: 25.0
+    vertical_width: 5.0
+    apply_to_top: true
+    apply_to_bottom_cmb: false
+  orientation:
+    rotation:
+      enabled: false
+      azimuth: 0.0
+    tilt:
+      enabled: false
+      plunge: 0.0
+      azimuth: 0.0
+
+output:
+  case_directory: "runs/ulvz_test_001"
+  model_record: "runs/ulvz_test_001/ulvz_model.yaml"
+  preserve_background: true
+  notes: "This file describes model parameters only; it does not modify SPECFEM inputs or model databases by itself."

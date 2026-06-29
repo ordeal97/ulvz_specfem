@@ -1,0 +1,20 @@
+# Optional S40RTS cylindrical-cap ULVZ overlay parameters.
+# This file is read only when the parsed MODEL_NAME is exactly "s40rts".
+# Copy to DATA/ulvz_s40rts.par for an actual run; the real parameter file is not tracked here.
+
+ENABLED = .false.
+
+# Center location in geographic degrees. Longitude is normalized to [-180,180).
+CENTER_LATITUDE_DEGREES = 0.0
+CENTER_LONGITUDE_DEGREES = 0.0
+
+# Geometry in kilometers above the CMB and along the CMB arc.
+THICKNESS_KM = 20.0
+LATERAL_RADIUS_KM = 100.0
+LATERAL_TAPER_KM = 20.0
+TOP_TAPER_KM = 5.0
+
+# Relative perturbations applied on top of local native S40RTS perturbations.
+DVS = -0.20
+DVP = -0.10
+DRHO = 0.10
