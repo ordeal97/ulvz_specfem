@@ -44,3 +44,6 @@ test_models:
 
 test_s40rts_ulvz:
 	${MPIFCCOMPILE_CHECK} ${FCFLAGS_f90} -o ./bin/test_s40rts_ulvz $(TEST_SRCDIR)/test_s40rts_ulvz.f90 -I./obj $(S40RTS_ULVZ_OBJECTS) $(MPILIBS)
+
+inspect_s40rts_ulvz_database:
+	${MPIFCCOMPILE_CHECK} ${FCFLAGS_f90} -o ./bin/inspect_s40rts_ulvz_database $(TEST_SRCDIR)/inspect_s40rts_ulvz_database.f90 -I./obj $(OBJECTS) $(MPILIBS)

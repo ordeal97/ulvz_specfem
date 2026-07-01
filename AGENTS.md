@@ -41,3 +41,11 @@ Do not infer physical parameters from convenience.
 - Do not add new dependencies unless necessary.
 - Never intall and update python environment, ask the user to do it.
 - Always plan before really coding.
+
+
+## Project status
+
+Authoritative project overview:
+docs/project_status.md
+
+Update it whenever a major Task is completed or a new validation result is obtained.

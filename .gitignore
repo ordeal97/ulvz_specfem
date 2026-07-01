@@ -1,0 +1,42 @@
+# Local agent/tool state
+.agents/
+.codex/
+
+# Python caches and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local Python and Conda environments
+.conda/
+.venv/
+venv/
+env/
+conda-env/
+
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*secret*
+*token*
+*password*
+
+# SPECFEM build and runtime outputs
+specfem3d_globe/bin/
+specfem3d_globe/obj/
+specfem3d_globe/DATABASES_MPI/*
+!specfem3d_globe/DATABASES_MPI/.gitignore
+specfem3d_globe/OUTPUT_FILES/*
+!specfem3d_globe/OUTPUT_FILES/.gitignore
+specfem3d_globe/tests/meshfem3D/results.log
+specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_*/
+
+# Local scratch notes
+note
