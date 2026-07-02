@@ -1,8 +1,17 @@
-# ULVZ Parameter Conventions
+# Design-Only ULVZ YAML Parameter Conventions
 
-This document defines the coordinate conventions and units for YAML ULVZ case files in `config/`.
+This document defines proposed coordinate conventions and units for YAML ULVZ
+case files in `config/`. It is a design/reference document only.
 
 The configuration files are model records. They do not modify SPECFEM source code, `DATA/Par_file`, or `DATABASES_MPI` by themselves.
+
+Current runtime status:
+
+- The current S40RTS ULVZ implementation does not read `config/*.yaml`.
+- The current implementation reads only `specfem3d_globe/DATA/ulvz_s40rts.par`.
+- The supported runtime parameters are documented in `docs/s40rts_ulvz_runtime_inputs.md`.
+- A validator/converter is required before these YAML conventions can drive a
+  SPECFEM run.
 
 ## Coordinates
 

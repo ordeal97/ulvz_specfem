@@ -418,6 +418,248 @@ def write_mesh_fixture(tmp_path):
     return reports
 
 
+def paraview_model_metadata():
+    return {
+        "schema_version": "ulvz_paraview_model.v1",
+        "producer": "pytest",
+        "coordinate_units": "km",
+        "coordinate_conversion": "x/y/z = x_norm/y_norm/z_norm * r_planet_km",
+        "r_planet_km": 1.0,
+        "model_field_units": {"vp": "km/s", "vs": "km/s", "rho": "g/cm^3"},
+        "ngll": {"x": 2, "y": 2, "z": 2},
+        "node_merge_policy": "rank-local-field-aware",
+        "merge_tolerances": {
+            "coordinate_abs_km": 1.0e-9,
+            "field_abs": 1.0e-10,
+        },
+    }
+
+
+def _cube_records(
+    ispec,
+    x0,
+    *,
+    iglob_offset,
+    shared_corner=None,
+    shared_vp=None,
+    shared_vp_ratio=None,
+    shared_ratio_ispec=None,
+):
+    rows = []
+    for k in [1, 2]:
+        for j in [1, 2]:
+            for i in [1, 2]:
+                x = x0 + (i - 1)
+                y = j - 1
+                z = k - 1
+                iglob = iglob_offset + len(rows) + 1
+                vp = 8.0 + 0.01 * ispec
+                if shared_corner and (i, j, k) == shared_corner:
+                    iglob = 1
+                    x, y, z = 0.0, 0.0, 0.0
+                    vp = shared_vp
+                ratio_ispec = ispec
+                if shared_corner and (i, j, k) == shared_corner and shared_ratio_ispec is not None:
+                    ratio_ispec = shared_ratio_ispec
+                vp_ratio = 1.0 + 0.01 * ratio_ispec
+                if shared_corner and (i, j, k) == shared_corner and shared_vp_ratio is not None:
+                    vp_ratio = shared_vp_ratio
+                vs_ratio = 0.90 + 0.01 * ratio_ispec
+                rho_ratio = 1.05 + 0.01 * ratio_ispec
+                vsh_ratio = 0.91 + 0.01 * ratio_ispec
+                rows.append(
+                    {
+                        "rank": 0,
+                        "ispec": ispec,
+                        "i": i,
+                        "j": j,
+                        "k": k,
+                        "iglob": iglob,
+                        "x_norm": x,
+                        "y_norm": y,
+                        "z_norm": z,
+                        "radius_km": (x**2 + y**2 + z**2) ** 0.5,
+                        "vp": vp,
+                        "vs": 4.5,
+                        "rho": 3.3,
+                        "vpv": vp,
+                        "vph": vp + 0.1,
+                        "vsv": 4.5,
+                        "vsh": 4.6,
+                        "eta": 1.0,
+                        "vp_ratio": vp_ratio,
+                        "vs_ratio": vs_ratio,
+                        "rho_ratio": rho_ratio,
+                        "vpv_ratio": vp_ratio,
+                        "vph_ratio": vp_ratio + 0.005,
+                        "vsv_ratio": vs_ratio,
+                        "vsh_ratio": vsh_ratio,
+                        "is_tiso": True,
+                    }
+                )
+    return rows
+
+
+def write_model_fixture(tmp_path):
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    (reports / "paraview_model_metadata.json").write_text(
+        json.dumps(paraview_model_metadata(), indent=2), encoding="utf-8"
+    )
+    records = []
+    records.extend(_cube_records(1, 0.0, iglob_offset=0))
+    records.extend(
+        _cube_records(
+            2,
+            2.0,
+            iglob_offset=100,
+            shared_corner=(1, 1, 1),
+            shared_vp=8.01,
+            shared_vp_ratio=1.01,
+            shared_ratio_ispec=1,
+        )
+    )
+    records.extend(
+        _cube_records(
+            3,
+            4.0,
+            iglob_offset=200,
+            shared_corner=(1, 1, 1),
+            shared_vp=7.25,
+        )
+    )
+    pd.DataFrame(records).to_csv(reports / "paraview_model_records_rank000000.csv.gz", index=False)
+    return reports
+
+
+def test_export_paraview_model_uses_field_aware_merge_and_splits_discontinuities(tmp_path):
+    VTK_HEXAHEDRON, vtkXMLPolyDataReader, vtkXMLPUnstructuredGridReader = require_vtk()
+    data_dir = write_model_fixture(tmp_path)
+    out_dir = tmp_path / "paraview_model"
+
+    result = run_script("export_paraview_model.py", "--data-dir", data_dir, "--out-dir", out_dir)
+    assert result.returncode == 0, result.stderr
+
+    reader = vtkXMLPUnstructuredGridReader()
+    reader.SetFileName(str(out_dir / "ulvz_model_mesh.pvtu"))
+    reader.Update()
+    grid = reader.GetOutput()
+    assert grid.GetNumberOfCells() == 3
+    assert grid.GetCellType(0) == VTK_HEXAHEDRON
+    assert grid.GetPointData().HasArray("vp")
+    assert grid.GetPointData().HasArray("rho")
+    assert grid.GetPointData().HasArray("vp_ratio")
+    assert grid.GetPointData().HasArray("rho_ratio")
+    assert grid.GetPointData().HasArray("is_tiso")
+    assert not grid.GetPointData().HasArray("ispec")
+    assert grid.GetCellData().HasArray("ispec")
+    assert grid.GetCellData().HasArray("subcell_i")
+    assert grid.GetCellData().HasArray("vp_ratio_mean")
+    assert grid.GetCellData().GetArray("vp_ratio_mean").GetTuple1(0) == pytest.approx(1.01)
+
+    points_at_origin = [
+        idx
+        for idx in range(grid.GetNumberOfPoints())
+        if grid.GetPoint(idx) == pytest.approx((0.0, 0.0, 0.0))
+    ]
+    vp_values = sorted(
+        grid.GetPointData().GetArray("vp").GetTuple1(idx) for idx in points_at_origin
+    )
+    assert vp_values == pytest.approx([7.25, 8.01])
+
+    metadata_payload = json.loads((out_dir / "ulvz_model_metadata.json").read_text())
+    assert metadata_payload["node_merge_policy"] == "rank-local-field-aware"
+    assert metadata_payload["field_aware_split_count"] == 1
+    assert metadata_payload["number_of_rank_local_nodes"] == 23
+    assert metadata_payload["number_of_exported_cells"] == 3
+
+    point_reader = vtkXMLPolyDataReader()
+    point_reader.SetFileName(str(out_dir / "ulvz_model_gll_points.vtp"))
+    point_reader.Update()
+    cloud = point_reader.GetOutput()
+    assert cloud.GetNumberOfPoints() == 23
+    assert cloud.GetPointData().HasArray("vp")
+    assert cloud.GetPointData().HasArray("vpv_ratio")
+    assert cloud.GetPointData().HasArray("iglob")
+
+
+def test_export_paraview_model_splits_when_only_ratio_differs(tmp_path):
+    _, _, vtkXMLPUnstructuredGridReader = require_vtk()
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    (reports / "paraview_model_metadata.json").write_text(
+        json.dumps(paraview_model_metadata(), indent=2), encoding="utf-8"
+    )
+    records = []
+    records.extend(_cube_records(1, 0.0, iglob_offset=0))
+    records.extend(
+        _cube_records(
+            2,
+            2.0,
+            iglob_offset=100,
+            shared_corner=(1, 1, 1),
+            shared_vp=8.01,
+            shared_vp_ratio=1.25,
+        )
+    )
+    pd.DataFrame(records).to_csv(reports / "paraview_model_records_rank000000.csv.gz", index=False)
+
+    out_dir = tmp_path / "paraview_model_ratio_split"
+    result = run_script("export_paraview_model.py", "--data-dir", reports, "--out-dir", out_dir)
+    assert result.returncode == 0, result.stderr
+
+    reader = vtkXMLPUnstructuredGridReader()
+    reader.SetFileName(str(out_dir / "ulvz_model_mesh.pvtu"))
+    reader.Update()
+    grid = reader.GetOutput()
+    points_at_origin = [
+        idx
+        for idx in range(grid.GetNumberOfPoints())
+        if grid.GetPoint(idx) == pytest.approx((0.0, 0.0, 0.0))
+    ]
+    assert len(points_at_origin) == 2
+    vp_values = [
+        grid.GetPointData().GetArray("vp").GetTuple1(idx) for idx in points_at_origin
+    ]
+    ratio_values = sorted(
+        grid.GetPointData().GetArray("vp_ratio").GetTuple1(idx) for idx in points_at_origin
+    )
+    assert vp_values == pytest.approx([8.01, 8.01])
+    assert ratio_values == pytest.approx([1.01, 1.25])
+    metadata_payload = json.loads((out_dir / "ulvz_model_metadata.json").read_text())
+    assert metadata_payload["field_aware_split_count"] == 1
+
+
+def test_export_paraview_model_writes_field_aware_welded_vtu(tmp_path):
+    _, _, _ = require_vtk()
+    from vtkmodules.vtkIOXML import vtkXMLUnstructuredGridReader
+
+    data_dir = write_model_fixture(tmp_path)
+    out_dir = tmp_path / "paraview_model_welded"
+
+    result = run_script(
+        "export_paraview_model.py",
+        "--data-dir",
+        data_dir,
+        "--out-dir",
+        out_dir,
+        "--weld-coordinates",
+        "--weld-tolerance",
+        "1.0e-9",
+    )
+    assert result.returncode == 0, result.stderr
+    metadata_payload = json.loads((out_dir / "ulvz_model_metadata.json").read_text())
+    assert metadata_payload["node_merge_policy"] == "coordinate-field-aware-welded"
+    assert metadata_payload["number_of_welded_nodes"] == 23
+
+    reader = vtkXMLUnstructuredGridReader()
+    reader.SetFileName(str(out_dir / "ulvz_model_mesh_welded.vtu"))
+    reader.Update()
+    grid = reader.GetOutput()
+    assert grid.GetNumberOfCells() == 3
+    assert grid.GetPointData().HasArray("vp")
+
+
 def test_export_paraview_mesh_writes_pvtu_unit_cube_with_positive_hex_volume(tmp_path):
     VTK_HEXAHEDRON, _, vtkXMLPUnstructuredGridReader = require_vtk()
     data_dir = write_mesh_fixture(tmp_path)
@@ -498,6 +740,7 @@ def test_export_paraview_mesh_writes_coordinate_welded_single_vtu(tmp_path):
         "view_mesh_3d.py",
         "export_paraview_points.py",
         "export_paraview_mesh.py",
+        "export_paraview_model.py",
     ],
 )
 def test_scripts_support_help(script):

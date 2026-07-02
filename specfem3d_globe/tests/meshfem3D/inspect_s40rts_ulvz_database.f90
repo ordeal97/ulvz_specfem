@@ -1,8 +1,8 @@
 program inspect_s40rts_ulvz_database
 
   use constants, only: CUSTOM_REAL,SIZE_REAL,SIZE_DOUBLE,NGLLX,NGLLY,NGLLZ, &
-    EARTH_R,PI,DEGREES_TO_RADIANS
-  use shared_parameters, only: MODEL,MODEL_NAME,R_PLANET,RCMB, &
+    EARTH_R,PI,GRAV,DEGREES_TO_RADIANS
+  use shared_parameters, only: MODEL,MODEL_NAME,R_PLANET,RCMB,RHOAV, &
     TRANSVERSE_ISOTROPY,ANISOTROPIC_3D_MANTLE
 
   implicit none
@@ -59,6 +59,12 @@ program inspect_s40rts_ulvz_database
     integer(kind=8) :: rank_local_nodes = 0_8
     integer(kind=8) :: exported_cells = 0_8
   end type paraview_mesh_stats
+
+  type paraview_model_stats
+    integer(kind=8) :: exported_records = 0_8
+    integer(kind=8) :: selected_elements = 0_8
+    integer(kind=8) :: gll_subcells = 0_8
+  end type paraview_model_stats
 
   character(len=512) :: mode,arg1,arg2,arg3
   double precision :: ratio_tol,rplanet_km,rcmb_km
@@ -196,6 +202,10 @@ contains
     if (export_paraview_mesh_enabled()) then
       call write_paraview_mesh_exports(disabled_dir,enabled_dir,report_dir,rplanet_km,rcmb_km, &
         ratio_tol,tiso_present)
+    endif
+
+    if (export_paraview_model_enabled()) then
+      call write_paraview_model_exports(disabled_dir,enabled_dir,report_dir,rplanet_km,rcmb_km,tiso_present)
     endif
 
     if (any(stats%category_count(:) == 0_8)) ok = .false.
@@ -665,6 +675,323 @@ contains
     export_paraview_mesh_enabled = .false.
     if (status == 0 .and. length > 0) export_paraview_mesh_enabled = (trim(value(1:length)) == '1')
   end function export_paraview_mesh_enabled
+
+  logical function export_paraview_model_enabled()
+    character(len=32) :: value
+    integer :: length,status
+    value = ''
+    call get_environment_variable('EXPORT_PARAVIEW_MODEL_DATA',value,length,status)
+    export_paraview_model_enabled = .false.
+    if (status == 0 .and. length > 0) export_paraview_model_enabled = (trim(value(1:length)) == '1')
+  end function export_paraview_model_enabled
+
+  subroutine write_paraview_model_exports(disabled_dir,enabled_dir,report_dir,rplanet_km,rcmb_km,tiso_present)
+    character(len=*), intent(in) :: disabled_dir,enabled_dir,report_dir
+    double precision, intent(in) :: rplanet_km,rcmb_km
+    logical, intent(in) :: tiso_present
+    type(solver_db) :: ref_db,ulvz_db
+    type(paraview_model_stats) :: model_stats,rank_stats
+    integer :: iproc,max_cells
+    character(len=512) :: ref_file,ulvz_file,region
+    double precision :: context_margin_km
+
+    call get_env_or_default('PARAVIEW_MODEL_EXPORT_REGION','ulvz-window',region)
+    max_cells = get_env_int_default('PARAVIEW_MODEL_EXPORT_MAX_CELLS',1600000)
+    context_margin_km = get_env_double_default('PARAVIEW_MODEL_EXPORT_CONTEXT_MARGIN_KM',-1.d0)
+    if (trim(region) /= 'all' .and. trim(region) /= 'near-cmb' .and. &
+        trim(region) /= 'ulvz-window') then
+      print *,'Unsupported PARAVIEW_MODEL_EXPORT_REGION=',trim(region)
+      stop 2
+    endif
+
+    do iproc = 0,NPROCTOT_VAL - 1
+      call make_solver_filename(disabled_dir,iproc,ref_file)
+      call make_solver_filename(enabled_dir,iproc,ulvz_file)
+      call read_solver_database(trim(ref_file),ref_db,tiso_present)
+      call read_solver_database(trim(ulvz_file),ulvz_db,tiso_present)
+      call validate_paraview_model_pairing(iproc,ref_db,ulvz_db,rplanet_km)
+      call write_rank_paraview_model_records(report_dir,iproc,ref_db,ulvz_db,rplanet_km,rcmb_km, &
+        trim(region),context_margin_km,rank_stats)
+      model_stats%exported_records = model_stats%exported_records + rank_stats%exported_records
+      model_stats%selected_elements = model_stats%selected_elements + rank_stats%selected_elements
+      model_stats%gll_subcells = model_stats%gll_subcells + rank_stats%gll_subcells
+      if (model_stats%gll_subcells > int(max_cells,kind=8)) then
+        print *,'PARAVIEW_MODEL_EXPORT_MAX_CELLS exceeded: ',model_stats%gll_subcells,max_cells
+        stop 1
+      endif
+      call free_solver_database(ref_db)
+      call free_solver_database(ulvz_db)
+    enddo
+    call write_paraview_model_metadata(report_dir,rplanet_km,rcmb_km,trim(region), &
+      context_margin_km,max_cells,tiso_present,model_stats)
+  end subroutine write_paraview_model_exports
+
+  subroutine validate_paraview_model_pairing(iproc,ref_db,ulvz_db,rplanet_km)
+    integer, intent(in) :: iproc
+    type(solver_db), intent(in) :: ref_db,ulvz_db
+    double precision, intent(in) :: rplanet_km
+    integer :: ispec,i,j,k,iglob_ref,iglob_ulvz
+    double precision :: dx,dy,dz
+
+    if (ref_db%nspec /= ulvz_db%nspec .or. ref_db%nglob /= ulvz_db%nglob) then
+      print *,'ParaView model pairing mismatch dimensions rank=',iproc, &
+        ' ref nspec/nglob=',ref_db%nspec,ref_db%nglob, &
+        ' enabled nspec/nglob=',ulvz_db%nspec,ulvz_db%nglob
+      stop 1
+    endif
+    if (any(ref_db%idoubling /= ulvz_db%idoubling)) then
+      print *,'ParaView model pairing mismatch idoubling rank=',iproc
+      stop 1
+    endif
+    if (any(ref_db%ispec_is_tiso .neqv. ulvz_db%ispec_is_tiso)) then
+      print *,'ParaView model pairing mismatch ispec_is_tiso rank=',iproc
+      stop 1
+    endif
+    if (any(ref_db%ibool /= ulvz_db%ibool)) then
+      print *,'ParaView model pairing mismatch ibool rank=',iproc
+      stop 1
+    endif
+
+    do ispec = 1,ref_db%nspec
+      do k = 1,NGLLZ
+        do j = 1,NGLLY
+          do i = 1,NGLLX
+            iglob_ref = ref_db%ibool(i,j,k,ispec)
+            iglob_ulvz = ulvz_db%ibool(i,j,k,ispec)
+            if (iglob_ref /= iglob_ulvz) then
+              print *,'ParaView model pairing iglob mismatch rank/ispec/i/j/k=', &
+                iproc,ispec,i,j,k,' ref/enabled=',iglob_ref,iglob_ulvz
+              stop 1
+            endif
+            dx = dabs(dble(ref_db%x(iglob_ref)) - dble(ulvz_db%x(iglob_ulvz))) * rplanet_km
+            dy = dabs(dble(ref_db%y(iglob_ref)) - dble(ulvz_db%y(iglob_ulvz))) * rplanet_km
+            dz = dabs(dble(ref_db%z(iglob_ref)) - dble(ulvz_db%z(iglob_ulvz))) * rplanet_km
+            if (max(dx,dy,dz) > 1.d-9) then
+              print *,'ParaView model pairing coordinate mismatch km rank/ispec/i/j/k/iglob=', &
+                iproc,ispec,i,j,k,iglob_ref,' maxdiff=',max(dx,dy,dz)
+              stop 1
+            endif
+          enddo
+        enddo
+      enddo
+    enddo
+  end subroutine validate_paraview_model_pairing
+
+  subroutine write_rank_paraview_model_records(report_dir,iproc,ref_db,ulvz_db,rplanet_km,rcmb_km, &
+      region,context_margin_km,rank_stats)
+    character(len=*), intent(in) :: report_dir,region
+    integer, intent(in) :: iproc
+    type(solver_db), intent(in) :: ref_db,ulvz_db
+    double precision, intent(in) :: rplanet_km,rcmb_km,context_margin_km
+    type(paraview_model_stats), intent(out) :: rank_stats
+    logical, allocatable :: selected(:)
+    integer :: unit,ispec,i,j,k
+    character(len=512) :: records_file
+
+    rank_stats%exported_records = 0_8
+    rank_stats%selected_elements = 0_8
+    rank_stats%gll_subcells = 0_8
+    allocate(selected(ref_db%nspec))
+    selected = .false.
+
+    do ispec = 1,ref_db%nspec
+      selected(ispec) = paraview_cell_selected(ref_db,ispec,rplanet_km,rcmb_km,region,context_margin_km)
+      if (selected(ispec)) then
+        rank_stats%selected_elements = rank_stats%selected_elements + 1_8
+        rank_stats%gll_subcells = rank_stats%gll_subcells + &
+          int((NGLLX - 1) * (NGLLY - 1) * (NGLLZ - 1),kind=8)
+      endif
+    enddo
+
+    write(records_file,"(a,'/paraview_model_records_rank',i6.6,'.csv')") trim(report_dir),iproc
+    open(newunit=unit,file=trim(records_file),status='replace',action='write')
+    call write_paraview_model_header(unit)
+    do ispec = 1,ref_db%nspec
+      if (.not. selected(ispec)) cycle
+      do k = 1,NGLLZ
+        do j = 1,NGLLY
+          do i = 1,NGLLX
+            call write_paraview_model_record(unit,iproc,ispec,i,j,k,ref_db,ulvz_db,rplanet_km,rcmb_km)
+            rank_stats%exported_records = rank_stats%exported_records + 1_8
+          enddo
+        enddo
+      enddo
+    enddo
+    close(unit)
+    deallocate(selected)
+  end subroutine write_rank_paraview_model_records
+
+  subroutine write_paraview_model_header(unit)
+    integer, intent(in) :: unit
+    write(unit,'(a)') 'rank,ispec,i,j,k,iglob,x_norm,y_norm,z_norm,'// &
+      'radius_km,depth_km,height_above_cmb_km,latitude_deg,longitude_deg,'// &
+      'vp,vs,rho,vpv,vph,vsv,vsh,eta,'// &
+      'vp_ratio,vs_ratio,rho_ratio,vpv_ratio,vph_ratio,vsv_ratio,vsh_ratio,is_tiso'
+  end subroutine write_paraview_model_header
+
+  subroutine write_paraview_model_record(unit,iproc,ispec,i,j,k,ref_db,ulvz_db,rplanet_km,rcmb_km)
+    integer, intent(in) :: unit,iproc,ispec,i,j,k
+    type(solver_db), intent(in) :: ref_db,ulvz_db
+    double precision, intent(in) :: rplanet_km,rcmb_km
+    integer :: iglob
+    double precision :: radius_norm,radius_km,depth_km,lat_deg,lon_deg
+    double precision :: point_azimuth_deg,angular_distance_deg,section_distance_km,cross_offset_km
+    double precision :: ref_vp,ref_vs,ref_rho,ref_vpv,ref_vph,ref_vsv,ref_vsh,ref_eta
+    double precision :: vp,vs,rho,vpv,vph,vsv,vsh,eta
+    double precision :: vp_ratio,vs_ratio,rho_ratio,vpv_ratio,vph_ratio,vsv_ratio,vsh_ratio
+
+    iglob = ulvz_db%ibool(i,j,k,ispec)
+    call point_coordinates(dble(ulvz_db%x(iglob)),dble(ulvz_db%y(iglob)),dble(ulvz_db%z(iglob)), &
+      rplanet_km,rcmb_km,radius_norm,radius_km,depth_km,lat_deg,lon_deg, &
+      point_azimuth_deg,angular_distance_deg,section_distance_km,cross_offset_km)
+    call final_model_values(ref_db,iproc,ispec,i,j,k,'disabled', &
+      ref_vp,ref_vs,ref_rho,ref_vpv,ref_vph,ref_vsv,ref_vsh,ref_eta)
+    call final_model_values(ulvz_db,iproc,ispec,i,j,k,'enabled', &
+      vp,vs,rho,vpv,vph,vsv,vsh,eta)
+    call compute_model_ratios(iproc,ispec,i,j,k,iglob, &
+      ref_vp,ref_vs,ref_rho,ref_vpv,ref_vph,ref_vsv,ref_vsh, &
+      vp,vs,rho,vpv,vph,vsv,vsh, &
+      vp_ratio,vs_ratio,rho_ratio,vpv_ratio,vph_ratio,vsv_ratio,vsh_ratio)
+    write(unit,'(i0,",",i0,",",i0,",",i0,",",i0,",",i0,23(",",es24.16),",",a)') &
+      iproc,ispec,i,j,k,iglob, &
+      dble(ulvz_db%x(iglob)),dble(ulvz_db%y(iglob)),dble(ulvz_db%z(iglob)),radius_km,depth_km, &
+      radius_km - rcmb_km,lat_deg,lon_deg,vp,vs,rho,vpv,vph,vsv,vsh,eta, &
+      vp_ratio,vs_ratio,rho_ratio,vpv_ratio,vph_ratio,vsv_ratio,vsh_ratio, &
+      trim(logical_string(ulvz_db%ispec_is_tiso(ispec)))
+  end subroutine write_paraview_model_record
+
+  subroutine final_model_values(db,iproc,ispec,i,j,k,label,vp,vs,rho,vpv,vph,vsv,vsh,eta)
+    type(solver_db), intent(in) :: db
+    integer, intent(in) :: iproc,ispec,i,j,k
+    character(len=*), intent(in) :: label
+    double precision, intent(out) :: vp,vs,rho,vpv,vph,vsv,vsh,eta
+    double precision :: rho_solver,kappav,kappah,muv,muh,scale_velocity,scale_density
+    integer :: iglob
+
+    iglob = db%ibool(i,j,k,ispec)
+    rho_solver = dble(db%rho(i,j,k,ispec))
+    kappav = dble(db%kappav(i,j,k,ispec))
+    kappah = dble(db%kappah(i,j,k,ispec))
+    muv = dble(db%muv(i,j,k,ispec))
+    muh = dble(db%muh(i,j,k,ispec))
+    eta = dble(db%eta(i,j,k,ispec))
+    call require_positive_model(rho_solver,'rho solver',trim(label),iproc,ispec,i,j,k,iglob)
+    call require_positive_model(muv / rho_solver,'vsv solver',trim(label),iproc,ispec,i,j,k,iglob)
+    call require_positive_model(muh / rho_solver,'vsh solver',trim(label),iproc,ispec,i,j,k,iglob)
+    call require_positive_model((kappav + 4.d0 * muv / 3.d0) / rho_solver, &
+      'vpv solver',trim(label),iproc,ispec,i,j,k,iglob)
+    call require_positive_model((kappah + 4.d0 * muh / 3.d0) / rho_solver, &
+      'vph solver',trim(label),iproc,ispec,i,j,k,iglob)
+
+    scale_velocity = dsqrt(PI * GRAV * RHOAV) * (R_PLANET / 1000.d0)
+    scale_density = RHOAV / 1000.d0
+    vsv = dsqrt(muv / rho_solver) * scale_velocity
+    vsh = dsqrt(muh / rho_solver) * scale_velocity
+    vpv = dsqrt((kappav + 4.d0 * muv / 3.d0) / rho_solver) * scale_velocity
+    vph = dsqrt((kappah + 4.d0 * muh / 3.d0) / rho_solver) * scale_velocity
+    rho = rho_solver * scale_density
+    vp = vpv
+    vs = vsv
+  end subroutine final_model_values
+
+  subroutine compute_model_ratios(iproc,ispec,i,j,k,iglob, &
+      ref_vp,ref_vs,ref_rho,ref_vpv,ref_vph,ref_vsv,ref_vsh, &
+      vp,vs,rho,vpv,vph,vsv,vsh, &
+      vp_ratio,vs_ratio,rho_ratio,vpv_ratio,vph_ratio,vsv_ratio,vsh_ratio)
+    integer, intent(in) :: iproc,ispec,i,j,k,iglob
+    double precision, intent(in) :: ref_vp,ref_vs,ref_rho,ref_vpv,ref_vph,ref_vsv,ref_vsh
+    double precision, intent(in) :: vp,vs,rho,vpv,vph,vsv,vsh
+    double precision, intent(out) :: vp_ratio,vs_ratio,rho_ratio,vpv_ratio,vph_ratio,vsv_ratio,vsh_ratio
+
+    call require_positive_model(ref_vp,'vp denominator','disabled',iproc,ispec,i,j,k,iglob)
+    call require_positive_model(ref_vs,'vs denominator','disabled',iproc,ispec,i,j,k,iglob)
+    call require_positive_model(ref_rho,'rho denominator','disabled',iproc,ispec,i,j,k,iglob)
+    call require_positive_model(ref_vpv,'vpv denominator','disabled',iproc,ispec,i,j,k,iglob)
+    call require_positive_model(ref_vph,'vph denominator','disabled',iproc,ispec,i,j,k,iglob)
+    call require_positive_model(ref_vsv,'vsv denominator','disabled',iproc,ispec,i,j,k,iglob)
+    call require_positive_model(ref_vsh,'vsh denominator','disabled',iproc,ispec,i,j,k,iglob)
+    vp_ratio = vp / ref_vp
+    vs_ratio = vs / ref_vs
+    rho_ratio = rho / ref_rho
+    vpv_ratio = vpv / ref_vpv
+    vph_ratio = vph / ref_vph
+    vsv_ratio = vsv / ref_vsv
+    vsh_ratio = vsh / ref_vsh
+  end subroutine compute_model_ratios
+
+  subroutine require_positive_model(value,field,label,iproc,ispec,i,j,k,iglob)
+    double precision, intent(in) :: value
+    character(len=*), intent(in) :: field,label
+    integer, intent(in) :: iproc,ispec,i,j,k,iglob
+    if (.not. (value > 0.d0) .or. dabs(value) >= huge(value)) then
+      print *,'ParaView model export non-positive/invalid value field=',trim(field), &
+        ' case=',trim(label),' rank/ispec/i/j/k/iglob=',iproc,ispec,i,j,k,iglob,' value=',value
+      stop 1
+    endif
+  end subroutine require_positive_model
+
+  subroutine write_paraview_model_metadata(report_dir,rplanet_km,rcmb_km,region,context_margin_km, &
+      max_cells,tiso_present,model_stats)
+    character(len=*), intent(in) :: report_dir,region
+    double precision, intent(in) :: rplanet_km,rcmb_km,context_margin_km
+    integer, intent(in) :: max_cells
+    logical, intent(in) :: tiso_present
+    type(paraview_model_stats), intent(in) :: model_stats
+    integer :: unit
+    double precision :: scale_velocity,scale_density
+
+    scale_velocity = dsqrt(PI * GRAV * RHOAV) * (R_PLANET / 1000.d0)
+    scale_density = RHOAV / 1000.d0
+    open(newunit=unit,file=trim(report_dir)//'/paraview_model_metadata.json',status='replace',action='write')
+    write(unit,'(a)') '{'
+    write(unit,'(a)') '  "schema_version": "ulvz_paraview_model.v1",'
+    write(unit,'(a)') '  "producer": "inspect_s40rts_ulvz_database.f90",'
+    write(unit,'(a)') '  "source": "proc*_reg1_solver_data.bin",'
+    write(unit,'(a)') '  "coordinate_units": "km",'
+    write(unit,'(a)') '  "coordinate_conversion": "x/y/z = x_norm/y_norm/z_norm * r_planet_km",'
+    write(unit,'(a,es16.8,a)') '  "r_planet_km": ',rplanet_km,','
+    write(unit,'(a,es16.8,a)') '  "rcmb_km": ',rcmb_km,','
+    write(unit,'(a)') '  "model_field_units": {"vp": "km/s", "vs": "km/s", "rho": "g/cm^3"},'
+    write(unit,'(a)') '  "ratio_field_units": "dimensionless",'
+    write(unit,'(a)') '  "ratio_fields": ["vp_ratio", "vs_ratio", "rho_ratio",'
+    write(unit,'(a)') '    "vpv_ratio", "vph_ratio", "vsv_ratio", "vsh_ratio"],'
+    write(unit,'(a)') '  "ratio_pairing": "element-local by identical rank,ispec,i,j,k; '// &
+      'iglob and coordinates must also match",'
+    write(unit,'(a)') '  "ratio_velocity_rule": "enabled and disabled physical velocities are derived '// &
+      'with the same solver definitions before division",'
+    write(unit,'(a)') '  "cell_ratio_summary_rule": "arithmetic mean of the eight corner ratio values '// &
+      'for each exported linear GLL subcell",'
+    write(unit,'(a)') '  "solver_fields": ["rhostore", "kappavstore", "muvstore",'
+    write(unit,'(a)') '    "kappahstore", "muhstore", "eta_anisostore"],'
+    write(unit,'(a,es16.8,a)') '  "velocity_scale_to_km_per_s": ',scale_velocity,','
+    write(unit,'(a,es16.8,a)') '  "density_scale_to_g_per_cm3": ',scale_density,','
+    write(unit,'(a,i0,a,i0,a,i0,a)') '  "ngll": {"x": ',NGLLX,', "y": ',NGLLY,', "z": ',NGLLZ,'},'
+    write(unit,'(a)') '  "cell_type": "VTK_HEXAHEDRON",'
+    write(unit,'(a)') '  "geometry_note": "GLL-node-resolved linear subcell visualization '// &
+      'of the computational spectral-element mesh",'
+    write(unit,'(a)') '  "subcell_ordering": ['
+    write(unit,'(a)') '    "(i,j,k)", "(i+1,j,k)", "(i+1,j+1,k)", "(i,j+1,k)",'
+    write(unit,'(a)') '    "(i,j,k+1)", "(i+1,j,k+1)", "(i+1,j+1,k+1)", "(i,j+1,k+1)"'
+    write(unit,'(a)') '  ],'
+    write(unit,'(a,a,a)') '  "region": "',trim(region),'",'
+    write(unit,'(a,i0,a)') '  "max_cells": ',max_cells,','
+    if (context_margin_km >= 0.d0) then
+      write(unit,'(a,es16.8,a)') '  "context_margin_km": ',context_margin_km,','
+    else
+      write(unit,'(a)') '  "context_margin_km": null,'
+    endif
+    write(unit,'(a)') '  "selection_rule": "export an element when any GLL point is inside the requested region",'
+    write(unit,'(a)') '  "node_merge_policy": "rank-local-field-aware",'
+    write(unit,'(a)') '  "merge_tolerances": {"coordinate_abs_km": 1.0e-9, "field_abs": 1.0e-8},'
+    write(unit,'(a)') '  "pointdata_ownership_note": "PointData does not claim unique ispec/i/j/k ownership",'
+    write(unit,'(a,a,a)') '  "tiso_present": ',trim(logical_string(tiso_present)),','
+    write(unit,'(a,i0,a)') '  "number_of_ranks": ',NPROCTOT_VAL,','
+    write(unit,'(a,i0,a)') '  "number_of_spectral_elements": ',model_stats%selected_elements,','
+    write(unit,'(a,i0,a)') '  "number_of_gll_subcells": ',model_stats%gll_subcells,','
+    write(unit,'(a,i0)') '  "number_of_raw_records": ',model_stats%exported_records
+    write(unit,'(a)') '}'
+    close(unit)
+  end subroutine write_paraview_model_metadata
 
   subroutine write_paraview_mesh_exports(disabled_dir,enabled_dir,report_dir,rplanet_km,rcmb_km, &
       ratio_tol,tiso_present)

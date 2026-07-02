@@ -12,6 +12,11 @@ Only these optional exporter scripts import VTK:
 
 - `scripts/ulvz_mesh_viz/export_paraview_points.py`
 - `scripts/ulvz_mesh_viz/export_paraview_mesh.py`
+- `scripts/ulvz_mesh_viz/export_paraview_model.py`
+
+The first two are diagnostic exporters. They expose ULVZ validation weights,
+ratios, categories, and a corner-only diagnostic mesh. The final model exporter
+is separate and uses final solver arrays from `proc*_reg1_solver_data.bin`.
 
 ## Data Products
 
@@ -55,6 +60,46 @@ KEEP_TEST_WORKDIR=1 \
 
 The shell harness compresses the test-inspector CSV products with
 `gzip -n -f`.
+
+Final model export:
+
+```bash
+cd specfem3d_globe/tests/meshfem3D
+EXPORT_PARAVIEW_MODEL_DATA=1 \
+KEEP_TEST_WORKDIR=1 \
+./6.test_s40rts_ulvz_mesh.sh
+
+python ../../../scripts/ulvz_mesh_viz/export_paraview_model.py \
+  --data-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/reports \
+  --out-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/paraview_model
+```
+
+Outputs:
+
+- `ulvz_model_gll_points.vtp`
+- `ulvz_model_mesh_rank000000.vtu`
+- `ulvz_model_mesh_rank000001.vtu`
+- `ulvz_model_mesh.pvtu`
+- `ulvz_model_metadata.json`
+
+The model exporter derives `vp`, `vs`, and `rho` only from final solver arrays
+stored in `solver_data.bin`; it does not infer them from diagnostic masks,
+`w_expected`, categories, or analytical ULVZ expectations.
+
+The raw model records also contain dimensionless before/after ratios:
+
+```text
+vp_ratio, vs_ratio, rho_ratio, vpv_ratio, vph_ratio, vsv_ratio, vsh_ratio
+```
+
+These ratios are paired element-locally. Each enabled record is matched only
+to the disabled record with the same `(rank, ispec, i, j, k)`, and the
+exporter additionally verifies matching `iglob` and coordinates. A topology,
+rank-count, coordinate, or pairing mismatch is a hard failure. Velocity ratios
+are computed after deriving enabled and disabled physical velocities with the
+same solver definitions; they are not reconstructed from elastic-modulus
+ratios. Cell ratio summaries are arithmetic means of the eight corner ratio
+values of each exported linear GLL subcell.
 
 ## Coordinates
 
@@ -150,6 +195,12 @@ implicit.
 
 Open `ulvz_gll_points.vtp` for pointwise GLL values, or `ulvz_mesh.pvtu` for
 the linearized element mesh.
+
+Open `ulvz_model_mesh.pvtu` for the final-model volume fields. Color by
+`vp`, `vs`, `rho`, or the dimensionless ratio arrays. The rank-local PVTU
+keeps coincident points separate when coordinates match but final material
+fields or ratio fields differ, preserving material discontinuities at
+spectral-element interfaces.
 
 Recommended filters:
 

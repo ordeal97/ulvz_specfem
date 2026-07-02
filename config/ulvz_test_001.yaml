@@ -1,3 +1,10 @@
+# DESIGN-ONLY / NOT RUNTIME INPUT.
+# This file is an example ULVZ case record following config/ulvz_case_schema.yaml.
+# The current S40RTS ULVZ implementation does not read this YAML file.
+# Runtime parameters are read only from:
+#   specfem3d_globe/DATA/ulvz_s40rts.par
+# A validator/converter would be needed before this file can drive runs.
+
 metadata:
   case_id: "ulvz_test_001"
   description: "Synthetic circular CMB ULVZ test case for workflow validation."

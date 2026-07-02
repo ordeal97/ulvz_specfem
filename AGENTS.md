@@ -43,9 +43,22 @@ Do not infer physical parameters from convenience.
 - Always plan before really coding.
 
 
-## Project status
+## Python environment
 
+  For ULVZ mesh visualization and test scripts, use:
+
+  `/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python`
+
+  Do not rely on implicit `conda activate`. Use the absolute interpreter path in verification commands unless the
+  user says otherwise.
+
+
+
+## Project status
 Authoritative project overview:
 docs/project_status.md
-
 Update it whenever a major Task is completed or a new validation result is obtained.
+
+Visulization tool overview:
+docs/ulvz_mesh_visualization_guide.md
+Update it whenever a major Task for visualization is completed or a new update of the visualization tools is obtained.

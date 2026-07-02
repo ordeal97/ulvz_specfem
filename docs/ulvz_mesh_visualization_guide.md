@@ -126,11 +126,38 @@ This writes and compresses:
 
 ```text
 reports/paraview_mesh_nodes_rank000000.csv.gz
-reports/paraview_mesh_cells_rank000000.csv.gz
 reports/paraview_mesh_nodes_rank000001.csv.gz
+reports/paraview_mesh_cells_rank000000.csv.gz
 reports/paraview_mesh_cells_rank000001.csv.gz
 reports/paraview_mesh_metadata.json
 ```
+
+For the preserved Task 3F validation run
+`specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444`,
+all four rank CSV.GZ files were non-empty and passed `gzip -t`.
+
+To generate the final model ParaView export, use the separate model-data
+switch:
+
+```bash
+cd specfem3d_globe/tests/meshfem3D
+EXPORT_PARAVIEW_MODEL_DATA=1 \
+KEEP_TEST_WORKDIR=1 \
+./6.test_s40rts_ulvz_mesh.sh
+
+python ../../../scripts/ulvz_mesh_viz/export_paraview_model.py \
+  --data-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/reports \
+  --out-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/paraview_model
+```
+
+This path reads inspector records derived from final `solver_data.bin` arrays.
+It exports physical `vp`, `vs`, `rho`, TISO fields, and dimensionless
+before/after ratios (`vp_ratio`, `vs_ratio`, `rho_ratio`, `vpv_ratio`,
+`vph_ratio`, `vsv_ratio`, `vsh_ratio`). Ratio pairing is element-local by
+`(rank, ispec, i, j, k)` with verified matching `iglob` and coordinates.
+The converter keeps coincident VTK points separate when material fields or
+ratio fields differ within tolerance, so discontinuities are not silently
+merged.
 
 ## 4. Quick-Start Workflow
 
@@ -594,7 +621,8 @@ python scripts/ulvz_mesh_viz/export_paraview_mesh.py \
 ```
 
 This writes `ulvz_mesh_welded.vtu` and records the rank-local node count,
-welded node count, and weld tolerance. Welding is never implicit.
+welded node count, and weld tolerance. The weld tolerance is in physical
+Cartesian kilometers. Welding is never implicit.
 
 The mesh cells are 8-corner linear VTK hexahedra for overview visualization.
 They do not preserve the full high-order curved spectral-element geometry.
@@ -625,6 +653,151 @@ Recommended ParaView filters:
 - `Slice`
 - `Extract Surface`
 - `Cell Data to Point Data`
+
+### `export_paraview_model.py`
+
+Purpose: export final solver model fields on the actual GLL-node geometry used
+by the preserved SPECFEM mesher fixture. This is separate from the diagnostic
+point and mesh exporters above.
+
+Required raw inputs:
+
+- `paraview_model_metadata.json`
+- `paraview_model_records_rankXXXXXX.csv.gz`
+
+Generate the raw inputs from the test harness:
+
+```bash
+cd specfem3d_globe/tests/meshfem3D
+EXPORT_PARAVIEW_MODEL_DATA=1 \
+KEEP_TEST_WORKDIR=1 \
+./6.test_s40rts_ulvz_mesh.sh
+```
+
+Convert to ParaView XML:
+
+```bash
+python scripts/ulvz_mesh_viz/export_paraview_model.py \
+  --data-dir path/to/reports \
+  --out-dir path/to/paraview_model
+```
+
+Default outputs:
+
+- `ulvz_model_gll_points.vtp`
+- `ulvz_model_mesh_rank000000.vtu`
+- `ulvz_model_mesh_rank000001.vtu`
+- `ulvz_model_mesh.pvtu`
+- `ulvz_model_metadata.json`
+
+The exported fields come from final solver arrays in
+`proc*_reg1_solver_data.bin`, after S40RTS and ULVZ composition. The exporter
+does not reconstruct `vp`, `vs`, or `rho` from `w_expected`, categories, masks,
+or analytical assumptions.
+
+Coordinates are physical Cartesian kilometers. Final model PointData includes
+`rank`, `iglob`, `vp`, `vs`, `rho`, coordinate auxiliaries, and TISO fields
+`vpv`, `vph`, `vsv`, `vsh`, and `eta` when present. PointData does not claim a
+unique `ispec/i/j/k` owner. CellData contains `rank`, `ispec`, `subcell_i`,
+`subcell_j`, `subcell_k`, and optional field means.
+
+The volume mesh is a GLL-node-resolved linear subcell visualization of the
+computational spectral-element mesh. It creates
+`(NGLLX - 1) * (NGLLY - 1) * (NGLLZ - 1)` linear hexahedral subcells per
+selected spectral element. It does not claim to preserve exact high-order
+curved spectral-element mapping.
+
+Node merging is rank-local and field-aware. Records merge only when
+`(rank, iglob)`, coordinates, and exported material fields agree within the
+metadata tolerances. If coincident records have different final material
+values, they remain separate coincident VTK points so ParaView can preserve the
+material discontinuity.
+
+For an explicit field-aware coordinate-welded single file:
+
+```bash
+python scripts/ulvz_mesh_viz/export_paraview_model.py \
+  --data-dir path/to/reports \
+  --out-dir path/to/paraview_model_welded \
+  --weld-coordinates \
+  --weld-tolerance 1.0e-6
+```
+
+Open `ulvz_model_mesh.pvtu` in ParaView and color by `vp`, `vs`, or `rho`.
+Useful filters are `Slice`, `Clip`, `Threshold`, and `Extract Surface`.
+
+### Preserved Task 3F Validation
+
+The final-model ParaView path was validated on:
+
+```text
+specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_161556_177882
+```
+
+The validation report is:
+
+```text
+paraview_model/paraview_model_real_fixture_validation.json
+paraview_model/paraview_model_real_fixture_validation.txt
+```
+
+Observed results for that preserved run:
+
+- `coordinate_units = km`
+- raw inputs:
+  `reports/paraview_model_records_rank000000.csv.gz` and
+  `reports/paraview_model_records_rank000001.csv.gz`
+- model VTP/PVTU/VTU outputs reopen with VTK
+- PVTU model mesh: 450 rank-local field-aware points and 256
+  `VTK_HEXAHEDRON` GLL subcells
+- welded model VTU: 405 points and 256 cells with
+  `weld_tolerance = 1.0e-6 km`
+- required PointData arrays include `vp`, `vs`, `rho`, coordinate auxiliaries,
+  and TISO fields
+- field-aware split detection ran and found no coincident material split in
+  this fixture
+- negative-volume count: 0
+- near-zero-volume count: 0 with threshold `1.0e-9 km^3`
+
+The earlier diagnostic ParaView path was validated on:
+
+```text
+specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444
+```
+
+The diagnostic validation report is:
+
+```text
+paraview/task_3f_real_fixture_validation.json
+paraview/task_3f_real_fixture_validation.txt
+```
+
+It records the selected workdir, Git commit/status, MPI command, Python
+executable, VTK version, file sizes, SHA256 checksums, gzip integrity checks,
+VTK reopening checks, category-array semantics, coordinate units, welding
+checks, and signed-volume checks. The checked files were:
+
+- `paraview/ulvz_gll_points.vtp`
+- `paraview/ulvz_mesh_rank000000.vtu`
+- `paraview/ulvz_mesh_rank000001.vtu`
+- `paraview/ulvz_mesh.pvtu`
+- `paraview_welded/ulvz_mesh_welded.vtu`
+
+Observed results for that preserved run:
+
+- `coordinate_units = km`
+- VTP point cloud: 49152 points with outside/taper/core counts 49088/48/16
+- PVTU mesh: 24 rank-local points and 4 `VTK_HEXAHEDRON` cells
+- welded VTU: 18 points and 4 cells with `weld_tolerance = 1.0e-6` km
+- all four mesh cells are mixed under the implemented
+  `cell_has_outside`, `cell_has_taper`, `cell_has_core`, and
+  `cell_category_code` semantics
+- negative-volume count: 0
+- near-zero-volume count: 0 with threshold `1.0e-9 km^3`
+
+This validates the optional ParaView export interface for the lightweight
+Task 3D fixture. It still does not make the fixture a production
+waveform-resolution mesh.
 
 ## 6. Figure Interpretation
 

@@ -1,5 +1,12 @@
+# DESIGN-ONLY / NOT RUNTIME INPUT.
+# This YAML schema is a proposed machine-readable case-record format.
+# The current S40RTS ULVZ implementation does not read this file or any
+# config/*.yaml file. Runtime parameters are read only from:
+#   specfem3d_globe/DATA/ulvz_s40rts.par
+# A validator/converter would be needed before this schema can drive runs.
+
 schema_version: "1.0"
-description: "Schema for synthetic CMB ULVZ case configuration."
+description: "Design-only schema for synthetic CMB ULVZ case records; not a current runtime input."
 
 required_sections:
   - metadata

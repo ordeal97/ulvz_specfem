@@ -1,6 +1,6 @@
 # ULVZ SPECFEM Project Status
 
-Last updated: 2026-06-30 17:32:40 CEST +0200
+Last updated: 2026-07-02 16:53:52 CEST +0200
 
 This file summarizes the current state of
 `/import/freenas-m-01-seismology/xjiang/ulvz_specfem`. It is based on
@@ -25,9 +25,9 @@ resolution study.
 | Task | Implementation status | Real-fixture verification status | Key evidence or limitation |
 | --- | --- | --- | --- |
 | Task 3C S40RTS ULVZ overlay | Implemented in `specfem3d_globe/src/meshfem3D/model_s40rts.f90`; example parameter file and test target present | Verified by `5.test_s40rts_ulvz.sh`; `results.log` records `test_s40rts_ulvz done successfully` | Overlay is enabled only for parsed `MODEL_NAME == 's40rts'`; `s40rts_paper` is explicitly excluded |
-| Task 3D two-rank mesher validation | Implemented with fixture Par_file, shell harness, and independent Fortran inspector | Verified on preserved workdir `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829` | Latest report status is PASS with nonzero outside/taper/core coverage and residuals below tolerance |
+| Task 3D two-rank mesher validation | Implemented with fixture Par_file, shell harness, and independent Fortran inspector | Verified on preserved workdir `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444` | Latest report status is PASS with nonzero outside/taper/core coverage and residuals below tolerance |
 | Task 3E visualization export and static plotting | Implemented under `scripts/ulvz_mesh_viz/` with CSV/JSON schema `ulvz_mesh_viz.v1` | Verified on preserved fixture outputs and static figures in latest workdir | Default static plotting path is documented and tested to avoid PyVista, VTK, Cartopy, and Meshio imports |
-| Task 3F ParaView export | Implemented scripts/docs/tests found: `export_paraview_points.py`, `export_paraview_mesh.py`, inspector/harness mesh CSV support, synthetic VTK tests | Not yet verified using preserved real-fixture ParaView artifacts | No preserved `paraview_mesh_metadata.json` was found; Task 3E figures do not prove ParaView integration |
+| Task 3F ParaView export | Diagnostic mesh exporters and final model exporter are implemented; final model path uses `solver_data.bin` arrays and `export_paraview_model.py` | implemented and verified on preserved real fixture `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226` | Final model validation records readable VTP, both VTU rank pieces, PVTU, welded VTU, `vp/vs/rho`, TISO, and before/after ratio arrays, gzip-verified raw rank CSVs, km coordinates, and zero negative/near-zero volumes |
 
 ## Runtime Contract
 
@@ -37,6 +37,8 @@ External S40RTS ULVZ parameter paths:
   `specfem3d_globe/DATA/ulvz_s40rts.par`
 - example path:
   `specfem3d_globe/DATA/ulvz_s40rts.par.example`
+- runtime input documentation:
+  `docs/s40rts_ulvz_runtime_inputs.md`
 
 Required keys:
 
@@ -88,7 +90,7 @@ tree is a Git repository. Current status command:
 git -C specfem3d_globe status --short
 ```
 
-Timestamp: 2026-06-30 17:32:40 CEST +0200
+Timestamp: 2026-07-02 16:53:52 CEST +0200
 
 Output:
 
@@ -106,12 +108,12 @@ Output:
 ?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_114241_1957826/
 ?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_114716_1959884/
 ?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_115002_1960459/
-?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_153531_2147228/
-?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_153639_2150987/
-?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_153747_9/
-?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_154733_2192419/
 ?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155014_2201348/
 ?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829/
+?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/
+?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_161115_2/
+?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_161556_177882/
+?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226/
 ?? tests/meshfem3D/test_s40rts_ulvz.f90
 ?? utils/BuildBot/__pycache__/
 ```
@@ -171,7 +173,7 @@ Evidence:
 - Inspector: `specfem3d_globe/tests/meshfem3D/inspect_s40rts_ulvz_database.f90`
 - Completion document: `docs/task_3d_s40rts_ulvz_mesh_test.md`
 - Latest preserved passing artifact:
-  `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829`
+  `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444`
 
 Fixture disclaimer:
 
@@ -206,8 +208,6 @@ SPECFEM version: 8.1.1
 git commit: 9c312cb2c991b47484a7f302775f4f01ed9470f8
 MPI command: mpirun -np 2 /import/freenas-m-01-seismology/xjiang/ulvz_specfem/specfem3d_globe/bin/xmeshfem3D
 OMP_NUM_THREADS: 1
-elapsed_seconds: 63
-artifact_kib: 143179
 ```
 
 ### Task 3E Visualization Export And Static Plotting
@@ -244,11 +244,13 @@ Evidence for implementation:
 
 - `scripts/ulvz_mesh_viz/export_paraview_points.py`
 - `scripts/ulvz_mesh_viz/export_paraview_mesh.py`
+- `scripts/ulvz_mesh_viz/export_paraview_model.py`
 - `specfem3d_globe/tests/meshfem3D/inspect_s40rts_ulvz_database.f90`
 - `specfem3d_globe/tests/meshfem3D/6.test_s40rts_ulvz_mesh.sh`
 - `tests/ulvz_mesh_viz/test_ulvz_mesh_viz.py`
 - `docs/task_3f_plan.md`
 - `docs/task_3f_paraview_export.md`
+- `docs/paraview_model_export_reconnaissance.md`
 
 Supported by synthetic tests:
 
@@ -257,19 +259,51 @@ Supported by synthetic tests:
 - PVTU/VTU unit cube writes readable `VTK_HEXAHEDRON` cells with expected
   positive orientation.
 - Explicit coordinate-welded VTU output works on synthetic data.
+- Final model exporter synthetic tests verify field-aware node merging,
+  coincident split preservation for material discontinuities, and welded VTU
+  output.
+- Final model exporter synthetic tests also verify ratio PointData/CellData,
+  ratio-aware coincident splitting, and `is_tiso` PointData export.
 
 Real preserved-fixture ParaView status:
 
-```bash
-find specfem3d_globe/tests/meshfem3D -maxdepth 3 -type f \
-  -name 'paraview_mesh_metadata.json' -print
-```
-
-The command output was empty. Therefore no preserved real-fixture
-`paraview_mesh_metadata.json` exists in the inspected workspace. Task 3F is
-implemented and synthetically tested where supported by evidence, but the
-real preserved-fixture ParaView export is not yet verified. Task 3E figure
-artifacts do not verify ParaView integration.
+- Latest final-model preserved validation report:
+  `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226/paraview_model/paraview_model_real_fixture_validation.json`
+- Human-readable final-model summary:
+  `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226/paraview_model/paraview_model_real_fixture_validation.txt`
+- The final-model report records `status: PASS`, readable
+  `ulvz_model_gll_points.vtp`, both rank-local model VTU pieces,
+  `ulvz_model_mesh.pvtu`, and `paraview_model_welded/ulvz_model_mesh_welded.vtu`.
+- It verifies `vp`, `vs`, `rho`, TISO point arrays, coordinate auxiliaries,
+  and dimensionless ratio arrays `vp_ratio`, `vs_ratio`, `rho_ratio`,
+  `vpv_ratio`, `vph_ratio`, `vsv_ratio`, and `vsh_ratio`; gzip integrity for
+  `paraview_model_records_rank000000.csv.gz` and
+  `paraview_model_records_rank000001.csv.gz`; `coordinate_units = km`; 256 GLL
+  subcells; 450 rank-local model points; 405 welded model points; zero
+  negative volumes; zero near-zero volumes; and no field-aware split detected
+  in this fixture.
+- Earlier diagnostic mesh preserved validation report:
+  `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/paraview/task_3f_real_fixture_validation.json`
+- Human-readable diagnostic mesh summary:
+  `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/paraview/task_3f_real_fixture_validation.txt`
+- The diagnostic mesh validation report records `status: PASS`, four non-empty
+  gzip-integrity-checked rank CSV inputs, readable `ulvz_gll_points.vtp`, both
+  rank-local VTU pieces, `ulvz_mesh.pvtu`, and
+  `paraview_welded/ulvz_mesh_welded.vtu`.
+- Observed environment for the validation was
+  `/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python`
+  with Python 3.11.15 and VTK 9.6.2.
+- The PVTU contains 24 rank-local points and 4 hexahedral cells. The welded
+  VTU contains 18 points and 4 cells with `weld_tolerance = 1.0e-6` km.
+- The report records `coordinate_units = km`, all required point/cell arrays,
+  mixed-cell category semantics from `cell_has_outside`,
+  `cell_has_taper`, `cell_has_core`, and `cell_category_code`, zero negative
+  volumes, zero near-zero volumes, and minimum signed PVTU volume
+  `6.655546350977618E+07 km^3`.
+- Python tests were rerun with the specified Conda interpreter after ratio and
+  TISO exporter implementation:
+  `python -m pytest tests/ulvz_mesh_viz/test_ulvz_mesh_viz.py -q` reported
+  `23 passed in 25.07s`.
 
 ## Planned Or Unavailable Work
 
@@ -290,35 +324,33 @@ Unavailable or environment-dependent:
 - compiler, MPI, and Python package versions beyond those directly stated in
   this file are not recorded in this status document.
 
-Python package availability is interpreter-specific. Command used:
+Python package availability is interpreter-specific. Latest Task 3F optional
+VTK environment check used the project interpreter:
 
 ```bash
-python - <<'PY'
+/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python - <<'PY'
 import importlib.util
 import sys
 print('sys.executable=' + sys.executable)
-for name in ['numpy','pandas','matplotlib','scipy','pytest','vtk','pyvista']:
+for name in ['vtk', 'pyvista']:
     print(f'{name}={bool(importlib.util.find_spec(name))}')
+if importlib.util.find_spec('vtk'):
+    import vtk
+    print('vtk_version=' + vtk.vtkVersion.GetVTKVersion())
 PY
 ```
 
 Output:
 
 ```text
-sys.executable=/usr/bin/python
-numpy=True
-pandas=True
-matplotlib=True
-scipy=True
-pytest=True
+sys.executable=/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python
 vtk=True
-pyvista=False
+pyvista=True
+vtk_version=9.6.2
 ```
 
-This result applies only to `/usr/bin/python`. It does not describe every
-Conda environment. Earlier work used the `ulvz-specfem` Conda environment,
-where PyVista may be available; check the active interpreter before optional
-3-D or ParaView workflows.
+This result applies only to the checked `ulvz-specfem` Conda interpreter. It
+does not describe every Python environment.
 
 ## Key Commands And Resume Workflow
 
@@ -373,7 +405,7 @@ python ../../../scripts/ulvz_mesh_viz/make_all_figures.py \
   --formats png,pdf
 ```
 
-Run the not-yet-verified Task 3F real-fixture ParaView path:
+Run the Task 3F real-fixture ParaView path:
 
 ```bash
 cd specfem3d_globe/tests/meshfem3D
@@ -389,13 +421,33 @@ python ../../../scripts/ulvz_mesh_viz/export_paraview_points.py \
 python ../../../scripts/ulvz_mesh_viz/export_paraview_mesh.py \
   --data-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/reports \
   --out-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/paraview
+
+python ../../../scripts/ulvz_mesh_viz/export_paraview_mesh.py \
+  --data-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/reports \
+  --out-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/paraview_welded \
+  --weld-coordinates \
+  --weld-tolerance 1.0e-6
+
+EXPORT_PARAVIEW_MODEL_DATA=1 \
+KEEP_TEST_WORKDIR=1 \
+./6.test_s40rts_ulvz_mesh.sh
+
+python ../../../scripts/ulvz_mesh_viz/export_paraview_model.py \
+  --data-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/reports \
+  --out-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/paraview_model
+
+python ../../../scripts/ulvz_mesh_viz/export_paraview_model.py \
+  --data-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/reports \
+  --out-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/paraview_model_welded \
+  --weld-coordinates \
+  --weld-tolerance 1.0e-6
 ```
 
 ## Latest Preserved Artifact
 
 Most relevant latest passing artifact:
 
-- `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829`
+- `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226`
 
 Contained evidence:
 
@@ -414,35 +466,26 @@ Contained evidence:
   `reports/preflight_summary.csv`,
   `reports/comparison_summary.txt`,
   `reports/comparison_summary.csv`,
-  `reports/mesh_visualization_metadata.json`,
-  `reports/mesh_gll_points.csv.gz`
-- figures:
-  `figures/plot_data_validation_summary.json`,
-  `figures/all_figures_manifest.json`
+  `reports/paraview_model_metadata.json`,
+  `reports/paraview_model_records_rank000000.csv.gz`,
+  `reports/paraview_model_records_rank000001.csv.gz`
+- ParaView final model outputs:
+  `paraview_model/ulvz_model_gll_points.vtp`,
+  `paraview_model/ulvz_model_mesh_rank000000.vtu`,
+  `paraview_model/ulvz_model_mesh_rank000001.vtu`,
+  `paraview_model/ulvz_model_mesh.pvtu`,
+  `paraview_model/paraview_model_real_fixture_validation.json`,
+  `paraview_model/paraview_model_real_fixture_validation.txt`,
+  `paraview_model_welded/ulvz_model_mesh_welded.vtu`
 
 ## Prioritized Next Steps
 
 ### Remaining Implementation Verification
 
-1. Run the Task 3F real preserved-fixture ParaView export:
-
-   - generate `paraview_mesh_metadata.json`;
-   - generate `paraview_mesh_nodes_rankXXXXXX.csv.gz`;
-   - generate `paraview_mesh_cells_rankXXXXXX.csv.gz`;
-   - run `export_paraview_points.py`;
-   - run `export_paraview_mesh.py`;
-   - reopen VTP/PVTU/VTU with the active Python/VTK or PyVista environment;
-   - record bounds, point counts, cell counts, cell types, arrays, category
-     counts, negative/zero-volume counts, node merge policy, and output sizes.
-
-2. Re-run and preserve Python test output for:
-
-   ```bash
-   python -m pytest tests/ulvz_mesh_viz/test_ulvz_mesh_viz.py -q
-   ```
-
-3. Verify the active optional 3-D environment explicitly. Record
-   `sys.executable`, package availability, and whether PyVista or VTK is used.
+Task 3F final-model ParaView export is now verified on preserved artifact
+`specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226`.
+Future reruns should preserve a validation JSON/TXT with the same evidence
+categories before replacing this latest artifact in the status document.
 
 ### Higher-Resolution Mesh Validation
 
@@ -521,6 +564,8 @@ Preserved test artifacts:
 - `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829/reports/preflight_summary.csv`
 - `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829/reports/mesh_visualization_metadata.json`
 - `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829/reports/mesh_gll_points.csv.gz`
+- `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/paraview/task_3f_real_fixture_validation.json`
+- `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/paraview/task_3f_real_fixture_validation.txt`
 - `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829/reference_disabled/manifest.txt`
 - `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829/ulvz_enabled/manifest.txt`
 - `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829/figures/plot_data_validation_summary.json`
@@ -529,8 +574,8 @@ Preserved test artifacts:
 Current command evidence:
 
 - `git -C specfem3d_globe status --short`
-- `python - <<'PY' ... importlib.util.find_spec(...) ... PY`
-- `find specfem3d_globe/tests/meshfem3D -maxdepth 3 -type f -name 'paraview_mesh_metadata.json' -print`
+- `/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python - <<'PY' ... importlib.util.find_spec(...) ... PY`
+- `python -m pytest tests/ulvz_mesh_viz/test_ulvz_mesh_viz.py -q`
 
 ## Appendix B: Earlier Retained Work Directories And Artifact Policy
 

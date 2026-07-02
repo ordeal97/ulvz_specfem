@@ -17,6 +17,7 @@ OMP_NUM_THREADS=${OMP_NUM_THREADS:-1}
 export OMP_NUM_THREADS
 EXPORT_MESH_VIZ_DATA=${EXPORT_MESH_VIZ_DATA:-0}
 EXPORT_PARAVIEW_MESH_DATA=${EXPORT_PARAVIEW_MESH_DATA:-0}
+EXPORT_PARAVIEW_MODEL_DATA=${EXPORT_PARAVIEW_MODEL_DATA:-0}
 KEEP_TEST_WORKDIR=${KEEP_TEST_WORKDIR:-0}
 
 if [ "$EXPORT_MESH_VIZ_DATA" = "1" ] && [ "$KEEP_TEST_WORKDIR" != "1" ]; then
@@ -25,6 +26,10 @@ if [ "$EXPORT_MESH_VIZ_DATA" = "1" ] && [ "$KEEP_TEST_WORKDIR" != "1" ]; then
 fi
 if [ "$EXPORT_PARAVIEW_MESH_DATA" = "1" ] && [ "$KEEP_TEST_WORKDIR" != "1" ]; then
   echo "EXPORT_PARAVIEW_MESH_DATA=1 requires KEEP_TEST_WORKDIR=1 so ParaView mesh exports are preserved" >&2
+  exit 1
+fi
+if [ "$EXPORT_PARAVIEW_MODEL_DATA" = "1" ] && [ "$KEEP_TEST_WORKDIR" != "1" ]; then
+  echo "EXPORT_PARAVIEW_MODEL_DATA=1 requires KEEP_TEST_WORKDIR=1 so ParaView model exports are preserved" >&2
   exit 1
 fi
 
@@ -191,6 +196,20 @@ if [ "$EXPORT_PARAVIEW_MESH_DATA" = "1" ]; then
     fi
     gzip -n -f "$report_dir/paraview_mesh_nodes_rank${rank}.csv"
     gzip -n -f "$report_dir/paraview_mesh_cells_rank${rank}.csv"
+  done
+fi
+
+if [ "$EXPORT_PARAVIEW_MODEL_DATA" = "1" ]; then
+  if [ ! -f "$report_dir/paraview_model_metadata.json" ]; then
+    echo "missing expected ParaView model metadata: $report_dir/paraview_model_metadata.json" >&2
+    exit 1
+  fi
+  for rank in 000000 000001; do
+    if [ ! -f "$report_dir/paraview_model_records_rank${rank}.csv" ]; then
+      echo "missing expected ParaView model records: $report_dir/paraview_model_records_rank${rank}.csv" >&2
+      exit 1
+    fi
+    gzip -n -f "$report_dir/paraview_model_records_rank${rank}.csv"
   done
 fi
 
