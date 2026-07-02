@@ -1,6 +1,6 @@
 # ULVZ SPECFEM Project Status
 
-Last updated: 2026-07-02 16:53:52 CEST +0200
+Last updated: 2026-07-02 17:42:12 CEST +0200
 
 This file summarizes the current state of
 `/import/freenas-m-01-seismology/xjiang/ulvz_specfem`. It is based on
@@ -27,7 +27,7 @@ resolution study.
 | Task 3C S40RTS ULVZ overlay | Implemented in `specfem3d_globe/src/meshfem3D/model_s40rts.f90`; example parameter file and test target present | Verified by `5.test_s40rts_ulvz.sh`; `results.log` records `test_s40rts_ulvz done successfully` | Overlay is enabled only for parsed `MODEL_NAME == 's40rts'`; `s40rts_paper` is explicitly excluded |
 | Task 3D two-rank mesher validation | Implemented with fixture Par_file, shell harness, and independent Fortran inspector | Verified on preserved workdir `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444` | Latest report status is PASS with nonzero outside/taper/core coverage and residuals below tolerance |
 | Task 3E visualization export and static plotting | Implemented under `scripts/ulvz_mesh_viz/` with CSV/JSON schema `ulvz_mesh_viz.v1` | Verified on preserved fixture outputs and static figures in latest workdir | Default static plotting path is documented and tested to avoid PyVista, VTK, Cartopy, and Meshio imports |
-| Task 3F ParaView export | Diagnostic mesh exporters and final model exporter are implemented; final model path uses `solver_data.bin` arrays and `export_paraview_model.py` | implemented and verified on preserved real fixture `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226` | Final model validation records readable VTP, both VTU rank pieces, PVTU, welded VTU, `vp/vs/rho`, TISO, and before/after ratio arrays, gzip-verified raw rank CSVs, km coordinates, and zero negative/near-zero volumes |
+| Task 3F ParaView export | Diagnostic mesh exporters and final model exporter are implemented; final model path uses `solver_data.bin` arrays and `export_paraview_model.py` | implemented and verified on preserved real fixture `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226`; latest combined diagnostic/model ParaView generation is `s40rts_ulvz_mesh_work_20260702_165805_185535` | Final model validation records readable VTP, both VTU rank pieces, PVTU, welded VTU, `vp/vs/rho`, TISO, and before/after ratio arrays, gzip-verified raw rank CSVs, km coordinates, and zero negative/near-zero volumes |
 
 ## Runtime Contract
 
@@ -90,7 +90,7 @@ tree is a Git repository. Current status command:
 git -C specfem3d_globe status --short
 ```
 
-Timestamp: 2026-07-02 16:53:52 CEST +0200
+Timestamp: 2026-07-02 17:42:12 CEST +0200
 
 Output:
 
@@ -114,6 +114,7 @@ Output:
 ?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_161115_2/
 ?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_161556_177882/
 ?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226/
+?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_165805_185535/
 ?? tests/meshfem3D/test_s40rts_ulvz.f90
 ?? utils/BuildBot/__pycache__/
 ```
@@ -267,6 +268,21 @@ Supported by synthetic tests:
 
 Real preserved-fixture ParaView status:
 
+- Latest combined diagnostic/model preserved ParaView generation:
+  `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_165805_185535`
+- Generation summary:
+  `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_165805_185535/paraview_generation_summary.json`
+- The latest generation summary records `status: PASS` with VTK 9.6.2 and
+  readable diagnostic outputs `paraview/ulvz_gll_points.vtp`,
+  `paraview/ulvz_mesh.pvtu`, `paraview_welded/ulvz_mesh_welded.vtu`, plus
+  final-model outputs `paraview_model/ulvz_model_gll_points.vtp`,
+  `paraview_model/ulvz_model_mesh.pvtu`, and
+  `paraview_model_welded/ulvz_model_mesh_welded.vtu`.
+- In this generation, the diagnostic point cloud contains 49,152 sampled
+  records over a broad fixture domain, while the final model PVTU contains
+  450 rank-local GLL points and 256 GLL subcells in the selected ULVZ window.
+  The final-model files are byte-identical to the earlier verified
+  `s40rts_ulvz_mesh_work_20260702_164822_183226` model outputs.
 - Latest final-model preserved validation report:
   `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226/paraview_model/paraview_model_real_fixture_validation.json`
 - Human-readable final-model summary:
@@ -351,6 +367,27 @@ vtk_version=9.6.2
 
 This result applies only to the checked `ulvz-specfem` Conda interpreter. It
 does not describe every Python environment.
+
+## GitHub Publishing
+
+The current project publishing workflow is documented in
+`docs/github_publish_workflow.md`. The clean publishing repository is:
+
+```text
+/import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish
+```
+
+Latest GitHub publication:
+
+```text
+remote: git@github.com:ordeal97/ulvz_specfem.git
+branch: main
+commit: 2835413 Add ULVZ ParaView model export workflow
+published: 2026-07-02
+```
+
+The publishing workflow excludes SPECFEM build outputs, simulation databases,
+preserved work directories, logs, caches, and local agent/tooling metadata.
 
 ## Key Commands And Resume Workflow
 

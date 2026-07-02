@@ -159,6 +159,38 @@ The converter keeps coincident VTK points separate when material fields or
 ratio fields differ within tolerance, so discontinuities are not silently
 merged.
 
+### ParaView File Types And Geometry Interpretation
+
+The diagnostic and final-model ParaView files answer different questions and
+should not be interpreted as the same mesh:
+
+| File | What the points/cells represent | Typical use |
+| --- | --- | --- |
+| `paraview/ulvz_gll_points.vtp` | Diagnostic sampled GLL records from `mesh_gll_points.csv.gz` | Inspect ULVZ footprint, `w_expected`, categories, expected ratios, and residuals |
+| `paraview/ulvz_mesh.pvtu` | Corner-only diagnostic hexahedra selected from the ULVZ window | Inspect coarse element-level diagnostic summaries |
+| `paraview_model/ulvz_model_gll_points.vtp` | Final-model GLL points selected for model export | Inspect point values of final `vp`, `vs`, `rho`, TISO fields, and before/after ratios |
+| `paraview_model/ulvz_model_mesh.pvtu` | GLL-node-resolved linear hexahedral subcells | Use ParaView `Slice`, `Clip`, `Threshold`, and `Extract Surface` on final model fields |
+
+`paraview/ulvz_gll_points.vtp` can look like a broad curved partial shell
+because the diagnostic point export includes a sparse sample of outside points
+over the larger validation fixture domain. In the preserved
+`s40rts_ulvz_mesh_work_20260702_165805_185535` run, this file contains 49,152
+point records and reaches near the surface radius (`z` bound near 6370 km).
+
+`paraview_model/ulvz_model_mesh.pvtu` can look like a small set of planar
+blocks because the final model exporter selects only the `ulvz-window`
+elements and subdivides each spectral element into linear GLL subcells. In the
+same preserved run, the final model PVTU contains 450 rank-local GLL points
+and 256 linear hexahedral subcells near the CMB. Its straight edges are the
+edges of the exported visualization subcells; they are not an exact rendering
+of SPECFEM's continuous high-order curved element mapping.
+
+For comparing the same selected local geometry, compare
+`paraview/ulvz_mesh.pvtu` with `paraview_model/ulvz_model_mesh.pvtu`, not
+`paraview/ulvz_gll_points.vtp` with the model PVTU. The former pair covers the
+same ULVZ-window bounds; the diagnostic mesh has four corner-only cells, while
+the final model mesh has 256 GLL subcells and carries final material fields.
+
 ## 4. Quick-Start Workflow
 
 After generating the Task 3D reports, run:
