@@ -52,7 +52,10 @@ the clean contents into the publishing copy:
 rsync -a \
   --exclude=.git \
   --exclude=.agents \
-  --exclude=.codex \
+  --include=/.codex/ \
+  --include=/.codex/skills/ \
+  --include=/.codex/skills/** \
+  --exclude=/.codex/** \
   --exclude=.pytest_cache \
   --exclude=__pycache__ \
   --exclude='*.py[cod]' \
@@ -75,6 +78,11 @@ rsync -a \
   --exclude=/specfem3d_globe/OUTPUT_FILES \
   --exclude=/specfem3d_globe/tests/meshfem3D/results.log \
   --exclude=/specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_* \
+  --include=/task_4c_acceptance_artifacts/ \
+  --include=/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_*/ \
+  --include=/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_*/task_4c_real_fixture_acceptance.json \
+  --include=/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_*/task_4c_real_fixture_acceptance.txt \
+  --exclude=/task_4c_acceptance_artifacts/** \
   /import/freenas-m-01-seismology/xjiang/ulvz_specfem/ \
   /import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish/
 ```
@@ -98,13 +106,30 @@ git commit -m "Add S40RTS ULVZ test documentation"
 If `git status` shows no changes after synchronization, there is nothing new to
 push.
 
+The same workflow is also encoded as a project Codex skill:
+
+```bash
+python .codex/skills/ulvz-github-publish/scripts/publish_ulvz_specfem.py
+```
+
+By default the script runs a dry run only. To synchronize, commit, and push:
+
+```bash
+python .codex/skills/ulvz-github-publish/scripts/publish_ulvz_specfem.py \
+  --sync \
+  --commit-message "Describe the update" \
+  --push
+```
+
 ## What Is Excluded
 
 The synchronization command excludes:
 
 - `.git`: prevents copying Git repository metadata from the working directory or
   nested source trees.
-- `.agents` and `.codex`: local agent/tooling metadata.
+- `.agents`: local agent/tooling metadata.
+- `.codex`: only `.codex/skills/**` is published; other `.codex` state is
+  excluded as local agent/tooling metadata.
 - `.pytest_cache`, `__pycache__`, and `*.py[cod]`: Python test and bytecode
   caches.
 - `.conda`, `.venv`, `venv`, `env`, and `conda-env`: local Python or Conda
@@ -119,6 +144,10 @@ The synchronization command excludes:
 - `specfem3d_globe/tests/meshfem3D/results.log`: generated test output.
 - `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_*`: preserved local
   validation work directories and mesher artifacts.
+- `task_4c_acceptance_artifacts/**`: bulky reusable-postprocessing acceptance
+  arrays, VTK files, PNGs, caches, and intermediate rank stores. Only small
+  `task_4c_real_fixture_acceptance.json` and
+  `task_4c_real_fixture_acceptance.txt` provenance reports are included.
 
 Before pushing large updates, it is useful to check for files that GitHub may
 reject:

@@ -82,6 +82,34 @@ Outputs:
 - `ulvz_model_mesh.pvtu`
 - `ulvz_model_metadata.json`
 
+Whole-fixture final model export:
+
+```bash
+cd specfem3d_globe/tests/meshfem3D
+PARAVIEW_MODEL_EXPORT_REGION=all \
+PARAVIEW_MODEL_EXPORT_MAX_CELLS=1600000 \
+EXPORT_PARAVIEW_MODEL_DATA=1 \
+KEEP_TEST_WORKDIR=1 \
+./6.test_s40rts_ulvz_mesh.sh
+
+python ../../../scripts/ulvz_mesh_viz/export_paraview_model.py \
+  --data-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/reports \
+  --out-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/paraview_model_full \
+  --full-mesh
+```
+
+Full-mesh outputs:
+
+- `ulvz_full_model_gll_points.vtp`
+- `ulvz_full_model_mesh_rank000000.vtu`
+- `ulvz_full_model_mesh_rank000001.vtu`
+- `ulvz_full_model_mesh.pvtu`
+- `ulvz_full_model_metadata.json`
+
+`--full-mesh` requires raw metadata `region = all`. If the raw records came
+from the default `ulvz-window` selection, conversion fails instead of silently
+creating misleading whole-mesh file names.
+
 The model exporter derives `vp`, `vs`, and `rho` only from final solver arrays
 stored in `solver_data.bin`; it does not infer them from diagnostic masks,
 `w_expected`, categories, or analytical ULVZ expectations.
@@ -191,6 +219,25 @@ The welded output records `node_merge_policy`, `weld_tolerance`,
 `number_of_exported_cells` in `ulvz_mesh_metadata.json`. Welding is never
 implicit.
 
+For model fields, the analogous explicit welded commands are:
+
+```bash
+python scripts/ulvz_mesh_viz/export_paraview_model.py \
+  --data-dir path/to/reports \
+  --out-dir path/to/paraview_model_welded \
+  --weld-coordinates \
+  --weld-tolerance 1.0e-6
+
+python scripts/ulvz_mesh_viz/export_paraview_model.py \
+  --data-dir path/to/reports \
+  --out-dir path/to/paraview_model_full_welded \
+  --full-mesh \
+  --weld-coordinates \
+  --weld-tolerance 1.0e-6
+```
+
+The full-mesh welded command writes `ulvz_full_model_mesh_welded.vtu`.
+
 ## ParaView Use
 
 Open `ulvz_gll_points.vtp` for pointwise GLL values, or `ulvz_mesh.pvtu` for
@@ -201,6 +248,13 @@ Open `ulvz_model_mesh.pvtu` for the final-model volume fields. Color by
 keeps coincident points separate when coordinates match but final material
 fields or ratio fields differ, preserving material discontinuities at
 spectral-element interfaces.
+
+Open `ulvz_full_model_mesh.pvtu` when the raw export was generated with
+`PARAVIEW_MODEL_EXPORT_REGION=all` and the goal is the whole exported fixture
+mesh shape. In `Surface With Edges` mode, ParaView shows the edges of the
+exported linear GLL subcells. These are real edges in the VTK visualization
+mesh, but they are not an exact rendering of SPECFEM's high-order curved
+mapping between GLL nodes.
 
 Recommended filters:
 
@@ -214,3 +268,34 @@ Recommended filters:
 The Task 3D fixture validates implementation behavior. It is not a
 production waveform-resolution mesh and should not be interpreted as a
 production ULVZ resolution study.
+
+## Full-Mesh Validation Evidence
+
+The whole-fixture final model path was generated and reopened with VTK on:
+
+```text
+specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260703_102747_261318
+```
+
+Validation reports:
+
+```text
+paraview_model_full/full_mesh_real_fixture_validation.json
+paraview_model_full/full_mesh_real_fixture_validation.txt
+```
+
+Observed results:
+
+- raw export metadata: `region = all`
+- `coordinate_units = km`
+- input records: 1,080,000
+- spectral elements: 8,640
+- exported GLL subcells: 552,960
+- rank-local field-aware nodes: 621,922
+- coordinate-welded nodes: 614,141
+- `weld_tolerance = 1.0e-6 km`
+- `field_aware_split_count = 38667`
+- readable VTP, both rank-local VTU pieces, PVTU, and welded VTU
+- required final field arrays and ratio arrays are present
+- negative-volume count: 0
+- near-zero-volume count: 0 with threshold `1.0e-12 km^3`

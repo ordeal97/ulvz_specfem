@@ -1,0 +1,4 @@
+interface:
+  display_name: "ULVZ GitHub Publish"
+  short_description: "Publish this project to GitHub safely"
+  default_prompt: "Use $ulvz-github-publish to sync this project into the publishing repository and push it to GitHub."

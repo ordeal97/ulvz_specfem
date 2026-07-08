@@ -1,0 +1,39 @@
+Task 4C real fixture acceptance
+pass: True
+acceptance_dir: /import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T221100Z
+reference_db: /import/freenas-m-01-seismology/xjiang/ulvz_specfem/specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/reference_disabled/DATABASES_MPI
+target_db: /import/freenas-m-01-seismology/xjiang/ulvz_specfem/specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/ulvz_enabled/DATABASES_MPI
+commands: 7
+failures: 0
+reference memory estimates:
+[
+  {
+    "rank": 0,
+    "region": 1,
+    "estimated_peak_memory_bytes": 157830880,
+    "estimated_peak_memory_mb": 150.519257,
+    "memory_limit_mb": 1024,
+    "source_record_payload_bytes": 32400000,
+    "geometry_topology_bytes": 16209648,
+    "physical_field_array_bytes": 25920000,
+    "output_buffer_bytes": 16192368,
+    "safety_margin_bytes": 67108864,
+    "safety_margin_policy": "fixed 64 MiB conservative overhead",
+    "decision": "accepted"
+  },
+  {
+    "rank": 1,
+    "region": 1,
+    "estimated_peak_memory_bytes": 157830880,
+    "estimated_peak_memory_mb": 150.519257,
+    "memory_limit_mb": 1024,
+    "source_record_payload_bytes": 32400000,
+    "geometry_topology_bytes": 16209648,
+    "physical_field_array_bytes": 25920000,
+    "output_buffer_bytes": 16192368,
+    "safety_margin_bytes": 67108864,
+    "safety_margin_policy": "fixed 64 MiB conservative overhead",
+    "decision": "accepted"
+  }
+]
+max Task 3D CSV ratio discrepancy: 2.22044604925e-16

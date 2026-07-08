@@ -1,0 +1,16 @@
+Task 4C real-fixture acceptance audit: FAIL
+
+Failure reasons:
+- extracted manifests do not record peak-memory estimate, only configured memory_limit_mb
+- current ParaView XML outputs reopen as empty wrapper datasets with zero points/cells and no physical/comparison arrays
+
+Artifact directory: /import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000
+Reference manifest: /import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/model_manifest.json
+ULVZ manifest: /import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/model_manifest.json
+Comparison manifest: /import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/comparison/ulvz_over_reference_manifest.json
+
+Extraction: full --allow-large succeeded for both preserved absolute DATABASES_MPI paths; fields rho/vpv/vph/vsv/vsh/eta present; no ratio/difference fields in single-model manifests.
+Comparison: command succeeded; orientation is target / reference and target - reference; ratio/difference fields are only in comparison product.
+Task 3D cross-check: consistency cross-check only, not independent scientific validation; category ratios match preserved inspector CSV rows to max absolute discrepancy 2.22e-16.
+ParaView: current wrappers reopen as empty VTK datasets with zero points/cells and no arrays; this fails the non-empty VTK product requirement.
+Regressions: tests/ulvz_model_postprocess 13 passed; tests/ulvz_mesh_viz 26 passed.

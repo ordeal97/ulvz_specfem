@@ -1,0 +1,1169 @@
+{
+  "commands_executed": [
+    "extract reference full --allow-large",
+    "extract ulvz full --allow-large",
+    "compare reference/ulvz",
+    "plot reference vsv histogram",
+    "plot comparison vsv_ratio histogram",
+    "paraview single both",
+    "paraview comparison both",
+    "pytest tests/ulvz_model_postprocess -q",
+    "pytest tests/ulvz_mesh_viz -q"
+  ],
+  "comparison": {
+    "compatibility_checks": {
+      "coordinate_units_match": true,
+      "extraction_mode_match": true,
+      "field_units_match": true,
+      "geometry_fingerprint_match": true,
+      "model_field_scaling_match": true,
+      "rank_inventory_match": true,
+      "roi_match": true,
+      "sampling_rule_match": true,
+      "schema_version_match": true,
+      "selection_fingerprint_match": true,
+      "topology_fingerprint_match": true
+    },
+    "field_units": {
+      "eta_difference": "dimensionless",
+      "eta_ratio": "dimensionless",
+      "rho_difference": "kg m^-3",
+      "rho_ratio": "dimensionless",
+      "vph_difference": "m s^-1",
+      "vph_ratio": "dimensionless",
+      "vpv_difference": "m s^-1",
+      "vpv_ratio": "dimensionless",
+      "vsh_difference": "m s^-1",
+      "vsh_ratio": "dimensionless",
+      "vsv_difference": "m s^-1",
+      "vsv_ratio": "dimensionless"
+    },
+    "orientation": {
+      "difference": "target - reference",
+      "ratio": "target / reference"
+    },
+    "rank_store": {
+      "layout": "rank-local-directory-npy-v1",
+      "ranks": [
+        {
+          "path": "ranks/rank000000_reg1",
+          "rank": 0,
+          "region": 1
+        },
+        {
+          "path": "ranks/rank000001_reg1",
+          "rank": 1,
+          "region": 1
+        }
+      ]
+    },
+    "single_model_comparison_fields_added": {
+      "reference": [],
+      "ulvz": []
+    }
+  },
+  "conclusion": "FAIL",
+  "end_timestamp": "2026-07-07T18:22:53.250166+02:00",
+  "environment": {
+    "numpy_version": "2.4.6",
+    "python_executable": "/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python",
+    "python_version": "3.11.15 | packaged by conda-forge | (main, Jun 11 2026, 03:34:02) [GCC 14.3.0]",
+    "pyvista_required_by_current_paraview_path": false,
+    "vtk_version": "9.6.2"
+  },
+  "external_path_contract": {
+    "output_root": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000",
+    "output_root_under_reference_db": false,
+    "output_root_under_ulvz_db": false,
+    "source_db_dirs_exist": true
+  },
+  "extraction": {
+    "reference": {
+      "extraction_mode": "full",
+      "extractor_build": {
+        "custom_real_bytes": 4,
+        "custom_real_representation": "SIZE_REAL",
+        "gll_dimensions": [
+          5,
+          5,
+          5
+        ],
+        "name": "xulvz_model_extract",
+        "record_layout_signature": "local-sequential-reg1-solver_data-v1"
+      },
+      "field_units": {
+        "eta": "dimensionless",
+        "rho": "kg m^-3",
+        "vph": "m s^-1",
+        "vpv": "m s^-1",
+        "vsh": "m s^-1",
+        "vsv": "m s^-1"
+      },
+      "has_ratio_or_difference_keys": [],
+      "limits": {
+        "memory_limit_mb": 1024
+      },
+      "manifest": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/model_manifest.json",
+      "ranks": [
+        {
+          "arrays": {
+            "ibool": {
+              "dtype": "int32",
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/ibool.npy",
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "idoubling": {
+              "dtype": "int32",
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/idoubling.npy",
+              "shape": [
+                4320
+              ]
+            },
+            "ispec_is_tiso": {
+              "dtype": "int32",
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/ispec_is_tiso.npy",
+              "shape": [
+                4320
+              ]
+            },
+            "x_km": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/x_km.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "x_norm": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/x_norm.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "y_km": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/y_km.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "y_norm": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/y_norm.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "z_km": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/z_km.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "z_norm": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/z_norm.npy",
+              "shape": [
+                291621
+              ]
+            }
+          },
+          "computed_peak_memory_estimate_mb": 118.58103942871094,
+          "field_arrays": {
+            "eta": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 1.0,
+              "min": 0.8938106298446655,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/fields/eta.npy",
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "rho": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 5611.505829405784,
+              "min": 2100.0016103804114,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/fields/rho.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vph": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 13824.247594072054,
+              "min": 2200.0017331842746,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/fields/vph.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vpv": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 13824.247594072054,
+              "min": 2200.0017331842746,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/fields/vpv.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vsh": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 7411.681061579429,
+              "min": 1004.3757345562371,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/fields/vsh.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vsv": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 7411.681061579429,
+              "min": 1004.3757345562371,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/fields/vsv.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            }
+          },
+          "fields": [
+            "eta",
+            "rho",
+            "vph",
+            "vsh",
+            "vpv",
+            "vsv"
+          ],
+          "gll_dimensions": [
+            5,
+            5,
+            5
+          ],
+          "nglob": 291621,
+          "nspec": 4320,
+          "rank": 0,
+          "region": 1
+        },
+        {
+          "arrays": {
+            "ibool": {
+              "dtype": "int32",
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/ibool.npy",
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "idoubling": {
+              "dtype": "int32",
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/idoubling.npy",
+              "shape": [
+                4320
+              ]
+            },
+            "ispec_is_tiso": {
+              "dtype": "int32",
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/ispec_is_tiso.npy",
+              "shape": [
+                4320
+              ]
+            },
+            "x_km": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/x_km.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "x_norm": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/x_norm.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "y_km": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/y_km.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "y_norm": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/y_norm.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "z_km": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/z_km.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "z_norm": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/z_norm.npy",
+              "shape": [
+                291621
+              ]
+            }
+          },
+          "computed_peak_memory_estimate_mb": 118.58103942871094,
+          "field_arrays": {
+            "eta": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 1.0,
+              "min": 0.8938093781471252,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/fields/eta.npy",
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "rho": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 5598.69199308157,
+              "min": 2100.0016103804114,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/fields/rho.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vph": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 13814.371311951747,
+              "min": 2300.001813179062,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/fields/vph.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vpv": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 13814.371311951747,
+              "min": 2300.001813179062,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/fields/vpv.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vsh": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 7376.134547348199,
+              "min": 1100.000891489064,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/fields/vsh.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vsv": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 7376.134547348199,
+              "min": 1100.000891489064,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000001_reg1/fields/vsv.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            }
+          },
+          "fields": [
+            "eta",
+            "rho",
+            "vph",
+            "vsh",
+            "vpv",
+            "vsv"
+          ],
+          "gll_dimensions": [
+            5,
+            5,
+            5
+          ],
+          "nglob": 291621,
+          "nspec": 4320,
+          "rank": 1,
+          "region": 1
+        }
+      ],
+      "recorded_peak_memory_keys": [],
+      "schema_version": "ulvz_model_postprocess.v1",
+      "source_database": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/reference_disabled/DATABASES_MPI"
+    },
+    "ulvz": {
+      "extraction_mode": "full",
+      "extractor_build": {
+        "custom_real_bytes": 4,
+        "custom_real_representation": "SIZE_REAL",
+        "gll_dimensions": [
+          5,
+          5,
+          5
+        ],
+        "name": "xulvz_model_extract",
+        "record_layout_signature": "local-sequential-reg1-solver_data-v1"
+      },
+      "field_units": {
+        "eta": "dimensionless",
+        "rho": "kg m^-3",
+        "vph": "m s^-1",
+        "vpv": "m s^-1",
+        "vsh": "m s^-1",
+        "vsv": "m s^-1"
+      },
+      "has_ratio_or_difference_keys": [],
+      "limits": {
+        "memory_limit_mb": 1024
+      },
+      "manifest": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/model_manifest.json",
+      "ranks": [
+        {
+          "arrays": {
+            "ibool": {
+              "dtype": "int32",
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/ibool.npy",
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "idoubling": {
+              "dtype": "int32",
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/idoubling.npy",
+              "shape": [
+                4320
+              ]
+            },
+            "ispec_is_tiso": {
+              "dtype": "int32",
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/ispec_is_tiso.npy",
+              "shape": [
+                4320
+              ]
+            },
+            "x_km": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/x_km.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "x_norm": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/x_norm.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "y_km": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/y_km.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "y_norm": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/y_norm.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "z_km": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/z_km.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "z_norm": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/z_norm.npy",
+              "shape": [
+                291621
+              ]
+            }
+          },
+          "computed_peak_memory_estimate_mb": 118.58103942871094,
+          "field_arrays": {
+            "eta": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 1.0,
+              "min": 0.8938106298446655,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/fields/eta.npy",
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "rho": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 5869.884122335911,
+              "min": 2100.0016103804114,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/fields/rho.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vph": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 13824.247594072054,
+              "min": 2200.0017331842746,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/fields/vph.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vpv": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 13824.247594072054,
+              "min": 2200.0017331842746,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/fields/vpv.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vsh": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 7411.681061579429,
+              "min": 1004.3757345562371,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/fields/vsh.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vsv": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 7411.681061579429,
+              "min": 1004.3757345562371,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000000_reg1/fields/vsv.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            }
+          },
+          "fields": [
+            "eta",
+            "rho",
+            "vph",
+            "vsh",
+            "vpv",
+            "vsv"
+          ],
+          "gll_dimensions": [
+            5,
+            5,
+            5
+          ],
+          "nglob": 291621,
+          "nspec": 4320,
+          "rank": 0,
+          "region": 1
+        },
+        {
+          "arrays": {
+            "ibool": {
+              "dtype": "int32",
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/ibool.npy",
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "idoubling": {
+              "dtype": "int32",
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/idoubling.npy",
+              "shape": [
+                4320
+              ]
+            },
+            "ispec_is_tiso": {
+              "dtype": "int32",
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/ispec_is_tiso.npy",
+              "shape": [
+                4320
+              ]
+            },
+            "x_km": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/x_km.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "x_norm": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/x_norm.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "y_km": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/y_km.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "y_norm": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/y_norm.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "z_km": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/z_km.npy",
+              "shape": [
+                291621
+              ]
+            },
+            "z_norm": {
+              "dtype": "float64",
+              "finite_count": 291621,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/z_norm.npy",
+              "shape": [
+                291621
+              ]
+            }
+          },
+          "computed_peak_memory_estimate_mb": 118.58103942871094,
+          "field_arrays": {
+            "eta": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 1.0,
+              "min": 0.8938093781471252,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/fields/eta.npy",
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "rho": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 5865.797341418266,
+              "min": 2100.0016103804114,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/fields/rho.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vph": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 13814.371311951747,
+              "min": 2300.001813179062,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/fields/vph.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vpv": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 13814.371311951747,
+              "min": 2300.001813179062,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/fields/vpv.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vsh": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 7369.959639185981,
+              "min": 1100.000891489064,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/fields/vsh.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            },
+            "vsv": {
+              "dtype": "float64",
+              "finite_count": 540000,
+              "max": 7369.959639185981,
+              "min": 1100.000891489064,
+              "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/ranks/rank000001_reg1/fields/vsv.npy",
+              "positive_count": 540000,
+              "shape": [
+                5,
+                5,
+                5,
+                4320
+              ]
+            }
+          },
+          "fields": [
+            "eta",
+            "rho",
+            "vph",
+            "vsh",
+            "vpv",
+            "vsv"
+          ],
+          "gll_dimensions": [
+            5,
+            5,
+            5
+          ],
+          "nglob": 291621,
+          "nspec": 4320,
+          "rank": 1,
+          "region": 1
+        }
+      ],
+      "recorded_peak_memory_keys": [],
+      "schema_version": "ulvz_model_postprocess.v1",
+      "source_database": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/ulvz_enabled/DATABASES_MPI"
+    }
+  },
+  "failure_reasons": [
+    "extracted manifests do not record peak-memory estimate, only configured memory_limit_mb",
+    "current ParaView XML outputs reopen as empty wrapper datasets with zero points/cells and no physical/comparison arrays"
+  ],
+  "figures": [
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/figures_single/histogram_vsv.png",
+      "sha256": "58e25e58d4b8513d4cabcb379cd6dc7e70914e441a3e53f0b7de0b69103da13a",
+      "size": 16073
+    },
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/figures_comparison/histogram_vsv_ratio.png",
+      "sha256": "a3f4aeb5bedbcfc1687884ead0526185b6aa5f18057483bb4b7370a1284611d0",
+      "size": 19761
+    }
+  ],
+  "git_commit": "9c312cb2c991b47484a7f302775f4f01ed9470f8",
+  "git_status_short": [
+    " M src/auxiliaries/rules.mk",
+    " M src/meshfem3D/model_s40rts.f90",
+    " M tests/meshfem3D/test_models.makefile",
+    "?? DATA/ulvz_s40rts.par.example",
+    "?? src/auxiliaries/ulvz_model_extract.f90",
+    "?? tests/meshfem3D/5.test_s40rts_ulvz.sh",
+    "?? tests/meshfem3D/6.test_s40rts_ulvz_mesh.sh",
+    "?? tests/meshfem3D/inspect_s40rts_ulvz_database.f90",
+    "?? tests/meshfem3D/results.log",
+    "?? tests/meshfem3D/s40rts_ulvz_mesh_fixture/",
+    "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_115002_1960459/",
+    "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155014_2201348/",
+    "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829/",
+    "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/",
+    "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_161556_177882/",
+    "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_165805_185535/",
+    "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260703_102747_261318/",
+    "?? tests/meshfem3D/test_s40rts_ulvz.f90",
+    "?? utils/BuildBot/__pycache__/"
+  ],
+  "key_output_checksums": [
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/model_manifest.json",
+      "sha256": "04b519597be3be90f26df4509681124c96bc3d3ccfb3583c651358fec4638aeb",
+      "size": 4046
+    },
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/model_manifest.json",
+      "sha256": "ecd0e4e9ced5d90dba02e8068de2fe8f0ac749afeddada30ca13273d590361bd",
+      "size": 4023
+    },
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/comparison/ulvz_over_reference_manifest.json",
+      "sha256": "2c9ee5337bcc7fed31bd9cadcbc8b1304097cd42be4a537d4ec764f2820f0b73",
+      "size": 1449
+    },
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/figures_single/histogram_vsv.png",
+      "sha256": "58e25e58d4b8513d4cabcb379cd6dc7e70914e441a3e53f0b7de0b69103da13a",
+      "size": 16073
+    },
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/figures_comparison/histogram_vsv_ratio.png",
+      "sha256": "a3f4aeb5bedbcfc1687884ead0526185b6aa5f18057483bb4b7370a1284611d0",
+      "size": 19761
+    },
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/paraview_single/model_points.pvtp",
+      "sha256": "55a0859373cd0748730850a2aa1fa070af39a8015daf1e7ad5df0ff1d1e383a4",
+      "size": 90
+    },
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/paraview_single/model_linear_mesh.pvtu",
+      "sha256": "05e78ee4f65cefbf661aabd8f38ca9a62d85dd9c794bf340b0fdd20a5dee8da9",
+      "size": 98
+    },
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/paraview_comparison/model_points.pvtp",
+      "sha256": "55a0859373cd0748730850a2aa1fa070af39a8015daf1e7ad5df0ff1d1e383a4",
+      "size": 90
+    },
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/paraview_comparison/model_linear_mesh.pvtu",
+      "sha256": "05e78ee4f65cefbf661aabd8f38ca9a62d85dd9c794bf340b0fdd20a5dee8da9",
+      "size": 98
+    },
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/ranks/rank000000_reg1/fields/rho.npy",
+      "sha256": "e8e1b91dc7305d1f83808e55b7b5a8962b518ef394a5d3b9f39576215a1a69bf",
+      "size": 4320080
+    },
+    {
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/comparison/ranks/rank000000_reg1/fields/vsv_ratio.npy",
+      "sha256": "0fb6370fa67e6b5eedfdf23d27854fb9216c1f2c3859eeb7ef5ab4c27fffdcaa",
+      "size": 4320128
+    }
+  ],
+  "manifests": {
+    "comparison": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/comparison/ulvz_over_reference_manifest.json",
+    "reference": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/reference_full/model_manifest.json",
+    "ulvz": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/ulvz_full/model_manifest.json"
+  },
+  "regressions": {
+    "tests_ulvz_mesh_viz": "26 passed",
+    "tests_ulvz_model_postprocess": "13 passed"
+  },
+  "remaining_limitations": [
+    "production-scale and high-frequency validation unverified",
+    "ADIOS/HDF5 unsupported",
+    "non-reg1 extraction unsupported",
+    "full anisotropic mantle cij export unsupported",
+    "standalone model-data plus geometry paths unsupported",
+    "cross-mesh interpolation unsupported",
+    "true sub-rank record streaming unsupported",
+    "ParaView data-piece export not implemented in current CLI path"
+  ],
+  "source_database_paths": {
+    "reference": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/reference_disabled/DATABASES_MPI",
+    "ulvz": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/ulvz_enabled/DATABASES_MPI"
+  },
+  "start_timestamp": "2026-07-07T18:17:32+02:00",
+  "task3d_consistency_cross_check": {
+    "category_summary": {
+      "rho": {
+        "core": {
+          "count": 16,
+          "max": 1.0500001117857347,
+          "max_abs_vs_export": 2.220446049250313e-16,
+          "min": 1.0499999823619117
+        },
+        "outside": {
+          "count": 49088,
+          "max": 1.0,
+          "max_abs_vs_export": 0.0,
+          "min": 1.0
+        },
+        "taper": {
+          "count": 48,
+          "max": 1.0314845874122898,
+          "max_abs_vs_export": 2.220446049250313e-16,
+          "min": 1.0024001667121976
+        }
+      },
+      "vph": {
+        "core": {
+          "count": 16,
+          "max": 0.8999999951212561,
+          "max_abs_vs_export": 2.220446049250313e-16,
+          "min": 0.8999999452525289
+        },
+        "outside": {
+          "count": 49088,
+          "max": 1.0,
+          "max_abs_vs_export": 0.0,
+          "min": 1.0
+        },
+        "taper": {
+          "count": 48,
+          "max": 0.9951995803302416,
+          "max_abs_vs_export": 2.220446049250313e-16,
+          "min": 0.9370309645151529
+        }
+      },
+      "vpv": {
+        "core": {
+          "count": 16,
+          "max": 0.8999999951212561,
+          "max_abs_vs_export": 2.220446049250313e-16,
+          "min": 0.8999999452525289
+        },
+        "outside": {
+          "count": 49088,
+          "max": 1.0,
+          "max_abs_vs_export": 0.0,
+          "min": 1.0
+        },
+        "taper": {
+          "count": 48,
+          "max": 0.9951995803302416,
+          "max_abs_vs_export": 2.220446049250313e-16,
+          "min": 0.9370309645151529
+        }
+      },
+      "vsh": {
+        "core": {
+          "count": 16,
+          "max": 0.8000000067192719,
+          "max_abs_vs_export": 1.1102230246251565e-16,
+          "min": 0.7999999545125437
+        },
+        "outside": {
+          "count": 49088,
+          "max": 1.0,
+          "max_abs_vs_export": 0.0,
+          "min": 1.0
+        },
+        "taper": {
+          "count": 48,
+          "max": 0.9903991476283384,
+          "max_abs_vs_export": 2.220446049250313e-16,
+          "min": 0.8740620014412014
+        }
+      },
+      "vsv": {
+        "core": {
+          "count": 16,
+          "max": 0.8000000067192719,
+          "max_abs_vs_export": 1.1102230246251565e-16,
+          "min": 0.7999999545125437
+        },
+        "outside": {
+          "count": 49088,
+          "max": 1.0,
+          "max_abs_vs_export": 0.0,
+          "min": 1.0
+        },
+        "taper": {
+          "count": 48,
+          "max": 0.9903991476283384,
+          "max_abs_vs_export": 2.220446049250313e-16,
+          "min": 0.8740620014412014
+        }
+      }
+    },
+    "exported_rows_checked": 49152,
+    "type": "consistency cross-check against preserved inspector CSV/report, not independent scientific validation"
+  },
+  "vtk_outputs": [
+    {
+      "bounds": [
+        1.0,
+        -1.0,
+        1.0,
+        -1.0,
+        1.0,
+        -1.0
+      ],
+      "can_read": 1,
+      "cell_arrays": [],
+      "cells": 0,
+      "class": "vtkPolyData",
+      "coordinate_units": "km from metadata, not present as VTK coordinates",
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/paraview_single/model_points.pvtp",
+      "point_arrays": [],
+      "points": 0,
+      "rank_piece_or_wrapper": "wrapper",
+      "size": 90
+    },
+    {
+      "bounds": [
+        1.0,
+        -1.0,
+        1.0,
+        -1.0,
+        1.0,
+        -1.0
+      ],
+      "can_read": 1,
+      "cell_arrays": [],
+      "cells": 0,
+      "class": "vtkUnstructuredGrid",
+      "coordinate_units": "km from metadata, not present as VTK coordinates",
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/paraview_single/model_linear_mesh.pvtu",
+      "point_arrays": [],
+      "points": 0,
+      "rank_piece_or_wrapper": "wrapper",
+      "size": 98
+    },
+    {
+      "bounds": [
+        1.0,
+        -1.0,
+        1.0,
+        -1.0,
+        1.0,
+        -1.0
+      ],
+      "can_read": 1,
+      "cell_arrays": [],
+      "cells": 0,
+      "class": "vtkPolyData",
+      "coordinate_units": "km from metadata, not present as VTK coordinates",
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/paraview_comparison/model_points.pvtp",
+      "point_arrays": [],
+      "points": 0,
+      "rank_piece_or_wrapper": "wrapper",
+      "size": 90
+    },
+    {
+      "bounds": [
+        1.0,
+        -1.0,
+        1.0,
+        -1.0,
+        1.0,
+        -1.0
+      ],
+      "can_read": 1,
+      "cell_arrays": [],
+      "cells": 0,
+      "class": "vtkUnstructuredGrid",
+      "coordinate_units": "km from metadata, not present as VTK coordinates",
+      "path": "/import/freenas-m-01-seismology/xjiang/ulvz_specfem/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T000000/paraview_comparison/model_linear_mesh.pvtu",
+      "point_arrays": [],
+      "points": 0,
+      "rank_piece_or_wrapper": "wrapper",
+      "size": 98
+    }
+  ]
+}

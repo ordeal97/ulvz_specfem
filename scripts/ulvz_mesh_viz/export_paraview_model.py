@@ -107,6 +107,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--data-dir", required=True)
     parser.add_argument("--out-dir", required=True)
     parser.add_argument("--metadata")
+    parser.add_argument(
+        "--full-mesh",
+        action="store_true",
+        help="Require metadata region=all and write ulvz_full_model_* outputs.",
+    )
     parser.add_argument("--weld-coordinates", action="store_true")
     parser.add_argument("--weld-tolerance", type=float, default=1.0e-6)
     return parser
@@ -462,6 +467,30 @@ def write_pvtu(path: Path, piece_names: list[str], point_arrays: list[str], cell
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def _output_names(full_mesh: bool) -> dict[str, str]:
+    prefix = "ulvz_full_model" if full_mesh else "ulvz_model"
+    return {
+        "prefix": prefix,
+        "gll_points": f"{prefix}_gll_points.vtp",
+        "mesh_piece": f"{prefix}_mesh_rank{{rank:06d}}.vtu",
+        "mesh_pvtu": f"{prefix}_mesh.pvtu",
+        "mesh_welded": f"{prefix}_mesh_welded.vtu",
+        "metadata": f"{prefix}_metadata.json",
+        "output_naming": "full-model" if full_mesh else "model",
+    }
+
+
+def _validate_full_mesh_request(metadata: dict, full_mesh: bool) -> None:
+    if not full_mesh:
+        return
+    region = str(metadata.get("region", "")).strip()
+    if region != "all":
+        raise PlotDataError(
+            "--full-mesh requires raw ParaView model records generated with region=all "
+            "(set PARAVIEW_MODEL_EXPORT_REGION=all before running the harness)"
+        )
+
+
 def weld_coordinate_field_nodes(
     rank_tables: list[tuple[int, pd.DataFrame, pd.DataFrame]],
     tolerance: float,
@@ -512,6 +541,8 @@ def run(args: argparse.Namespace) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
     metadata_path = Path(args.metadata) if args.metadata else data_dir / "paraview_model_metadata.json"
     metadata = load_metadata(metadata_path)
+    _validate_full_mesh_request(metadata, bool(args.full_mesh))
+    names = _output_names(bool(args.full_mesh))
 
     rank_tables = []
     split_count = 0
@@ -526,17 +557,18 @@ def run(args: argparse.Namespace) -> dict:
         split_keys.extend(stats["coincident_split_keys"])
 
     all_nodes = pd.concat([nodes for _, nodes, _ in rank_tables], ignore_index=True)
-    write_vtp(all_nodes, out_dir / "ulvz_model_gll_points.vtp")
+    write_vtp(all_nodes, out_dir / names["gll_points"])
 
     if args.weld_coordinates:
         total_rank_local_nodes = sum(len(nodes) for _, nodes, _ in rank_tables)
         welded_nodes, welded_cells = weld_coordinate_field_nodes(rank_tables, args.weld_tolerance)
-        output = out_dir / "ulvz_model_mesh_welded.vtu"
+        output = out_dir / names["mesh_welded"]
         write_vtu(welded_nodes, welded_cells, output)
         sidecar = dict(metadata)
         sidecar.update(
             {
                 "node_merge_policy": "coordinate-field-aware-welded",
+                "output_naming": names["output_naming"],
                 "weld_tolerance_km": float(args.weld_tolerance),
                 "number_of_input_records": int(total_records),
                 "number_of_rank_local_nodes": int(total_rank_local_nodes),
@@ -544,10 +576,10 @@ def run(args: argparse.Namespace) -> dict:
                 "number_of_exported_cells": int(len(welded_cells)),
                 "field_aware_split_count": int(split_count),
                 "coincident_split_keys": split_keys,
-                "outputs": [str(out_dir / "ulvz_model_gll_points.vtp"), str(output)],
+                "outputs": [str(out_dir / names["gll_points"]), str(output)],
             }
         )
-        write_json(out_dir / "ulvz_model_metadata.json", sidecar)
+        write_json(out_dir / names["metadata"], sidecar)
         return sidecar
 
     piece_names = []
@@ -560,11 +592,11 @@ def run(args: argparse.Namespace) -> dict:
         total_cells += len(cells)
         point_arrays_seen.update(name for name in POINT_ARRAYS if name in nodes.columns)
         cell_arrays_seen.update(name for name in CELL_ARRAYS if name in cells.columns)
-        piece = f"ulvz_model_mesh_rank{rank:06d}.vtu"
+        piece = names["mesh_piece"].format(rank=rank)
         write_vtu(nodes, cells, out_dir / piece)
         piece_names.append(piece)
 
-    pvtu = out_dir / "ulvz_model_mesh.pvtu"
+    pvtu = out_dir / names["mesh_pvtu"]
     write_pvtu(
         pvtu,
         piece_names,
@@ -575,6 +607,7 @@ def run(args: argparse.Namespace) -> dict:
     sidecar.update(
         {
             "node_merge_policy": "rank-local-field-aware",
+            "output_naming": names["output_naming"],
             "weld_tolerance_km": None,
             "number_of_input_records": int(total_records),
             "number_of_rank_local_nodes": int(total_nodes),
@@ -582,12 +615,12 @@ def run(args: argparse.Namespace) -> dict:
             "number_of_exported_cells": int(total_cells),
             "field_aware_split_count": int(split_count),
             "coincident_split_keys": split_keys,
-            "outputs": [str(out_dir / "ulvz_model_gll_points.vtp")]
+            "outputs": [str(out_dir / names["gll_points"])]
             + [str(out_dir / name) for name in piece_names]
             + [str(pvtu)],
         }
     )
-    write_json(out_dir / "ulvz_model_metadata.json", sidecar)
+    write_json(out_dir / names["metadata"], sidecar)
     return sidecar
 
 

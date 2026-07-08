@@ -41,6 +41,7 @@ auxiliaries_TARGETS = \
 	$E/xcreate_movie_AVS_DX \
 	$E/xcreate_movie_GMT_global \
 	$E/xextract_database \
+	$E/xulvz_model_extract \
 	$E/xwrite_profile \
 	$(EMPTY_MACRO)
 
@@ -80,6 +81,7 @@ auxiliaries_OBJECTS = \
 	$(xcreate_movie_AVS_DX_OBJECTS) \
 	$(xcreate_movie_GMT_global_OBJECTS) \
 	$(xextract_database_OBJECTS) \
+	$(xulvz_model_extract_OBJECTS) \
 	$(xwrite_profile_OBJECTS) \
 	$(EMPTY_MACRO)
 
@@ -565,6 +567,19 @@ ${E}/xextract_database: $(xextract_database_OBJECTS) $(xextract_database_SHARED_
 
 ### additional dependencies
 $O/extract_database.aux.o: $O/specfem3D_par.solverstatic_module.o
+
+#######################################
+
+xulvz_model_extract_OBJECTS = \
+	$O/ulvz_model_extract.aux.o \
+	$(EMPTY_MACRO)
+
+xulvz_model_extract_SHARED_OBJECTS = \
+	$O/shared_par.shared_module.o \
+	$(EMPTY_MACRO)
+
+${E}/xulvz_model_extract: $(xulvz_model_extract_OBJECTS) $(xulvz_model_extract_SHARED_OBJECTS)
+	${MPIFCCOMPILE_CHECK} -o $@ $+ $(MPILIBS)
 
 #######################################
 

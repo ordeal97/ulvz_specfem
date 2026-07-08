@@ -418,7 +418,7 @@ def write_mesh_fixture(tmp_path):
     return reports
 
 
-def paraview_model_metadata():
+def paraview_model_metadata(region="ulvz-window"):
     return {
         "schema_version": "ulvz_paraview_model.v1",
         "producer": "pytest",
@@ -427,6 +427,7 @@ def paraview_model_metadata():
         "r_planet_km": 1.0,
         "model_field_units": {"vp": "km/s", "vs": "km/s", "rho": "g/cm^3"},
         "ngll": {"x": 2, "y": 2, "z": 2},
+        "region": region,
         "node_merge_policy": "rank-local-field-aware",
         "merge_tolerances": {
             "coordinate_abs_km": 1.0e-9,
@@ -658,6 +659,105 @@ def test_export_paraview_model_writes_field_aware_welded_vtu(tmp_path):
     grid = reader.GetOutput()
     assert grid.GetNumberOfCells() == 3
     assert grid.GetPointData().HasArray("vp")
+
+
+def test_export_paraview_model_full_mesh_uses_distinct_output_names(tmp_path):
+    _, vtkXMLPolyDataReader, vtkXMLPUnstructuredGridReader = require_vtk()
+    data_dir = write_model_fixture(tmp_path)
+    (data_dir / "paraview_model_metadata.json").write_text(
+        json.dumps(paraview_model_metadata(region="all"), indent=2), encoding="utf-8"
+    )
+    out_dir = tmp_path / "paraview_model_full"
+
+    result = run_script(
+        "export_paraview_model.py",
+        "--data-dir",
+        data_dir,
+        "--out-dir",
+        out_dir,
+        "--full-mesh",
+    )
+    assert result.returncode == 0, result.stderr
+    assert (out_dir / "ulvz_full_model_gll_points.vtp").exists()
+    assert (out_dir / "ulvz_full_model_mesh_rank000000.vtu").exists()
+    assert (out_dir / "ulvz_full_model_mesh.pvtu").exists()
+    assert (out_dir / "ulvz_full_model_metadata.json").exists()
+    assert not (out_dir / "ulvz_model_mesh.pvtu").exists()
+
+    metadata_payload = json.loads((out_dir / "ulvz_full_model_metadata.json").read_text())
+    assert metadata_payload["region"] == "all"
+    assert metadata_payload["output_naming"] == "full-model"
+
+    reader = vtkXMLPUnstructuredGridReader()
+    reader.SetFileName(str(out_dir / "ulvz_full_model_mesh.pvtu"))
+    reader.Update()
+    grid = reader.GetOutput()
+    assert grid.GetNumberOfCells() == 3
+    assert grid.GetPointData().HasArray("vp")
+    assert grid.GetPointData().HasArray("vp_ratio")
+    assert grid.GetCellData().HasArray("vp_ratio_mean")
+
+    point_reader = vtkXMLPolyDataReader()
+    point_reader.SetFileName(str(out_dir / "ulvz_full_model_gll_points.vtp"))
+    point_reader.Update()
+    cloud = point_reader.GetOutput()
+    assert cloud.GetNumberOfPoints() == 23
+    assert cloud.GetPointData().HasArray("rho")
+
+
+def test_export_paraview_model_full_mesh_requires_all_region(tmp_path):
+    data_dir = write_model_fixture(tmp_path)
+    out_dir = tmp_path / "paraview_model_full_bad"
+
+    result = run_script(
+        "export_paraview_model.py",
+        "--data-dir",
+        data_dir,
+        "--out-dir",
+        out_dir,
+        "--full-mesh",
+    )
+    assert result.returncode != 0
+    assert "region=all" in result.stderr
+
+
+def test_export_paraview_model_full_mesh_welded_uses_distinct_output_names(tmp_path):
+    from vtkmodules.vtkIOXML import vtkXMLUnstructuredGridReader
+
+    data_dir = write_model_fixture(tmp_path)
+    (data_dir / "paraview_model_metadata.json").write_text(
+        json.dumps(paraview_model_metadata(region="all"), indent=2), encoding="utf-8"
+    )
+    out_dir = tmp_path / "paraview_model_full_welded"
+
+    result = run_script(
+        "export_paraview_model.py",
+        "--data-dir",
+        data_dir,
+        "--out-dir",
+        out_dir,
+        "--full-mesh",
+        "--weld-coordinates",
+        "--weld-tolerance",
+        "1.0e-9",
+    )
+    assert result.returncode == 0, result.stderr
+    assert (out_dir / "ulvz_full_model_gll_points.vtp").exists()
+    assert (out_dir / "ulvz_full_model_mesh_welded.vtu").exists()
+    assert (out_dir / "ulvz_full_model_metadata.json").exists()
+    assert not (out_dir / "ulvz_model_mesh_welded.vtu").exists()
+
+    metadata_payload = json.loads((out_dir / "ulvz_full_model_metadata.json").read_text())
+    assert metadata_payload["output_naming"] == "full-model"
+    assert metadata_payload["node_merge_policy"] == "coordinate-field-aware-welded"
+    assert metadata_payload["number_of_welded_nodes"] == 23
+
+    reader = vtkXMLUnstructuredGridReader()
+    reader.SetFileName(str(out_dir / "ulvz_full_model_mesh_welded.vtu"))
+    reader.Update()
+    grid = reader.GetOutput()
+    assert grid.GetNumberOfCells() == 3
+    assert grid.GetPointData().HasArray("vs_ratio")
 
 
 def test_export_paraview_mesh_writes_pvtu_unit_cube_with_positive_hex_volume(tmp_path):

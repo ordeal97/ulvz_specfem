@@ -159,6 +159,46 @@ The converter keeps coincident VTK points separate when material fields or
 ratio fields differ within tolerance, so discontinuities are not silently
 merged.
 
+For whole-fixture model geometry, generate raw records with `region=all` and
+convert with `--full-mesh`:
+
+```bash
+cd specfem3d_globe/tests/meshfem3D
+PARAVIEW_MODEL_EXPORT_REGION=all \
+PARAVIEW_MODEL_EXPORT_MAX_CELLS=1600000 \
+EXPORT_PARAVIEW_MODEL_DATA=1 \
+KEEP_TEST_WORKDIR=1 \
+./6.test_s40rts_ulvz_mesh.sh
+
+python ../../../scripts/ulvz_mesh_viz/export_paraview_model.py \
+  --data-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/reports \
+  --out-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/paraview_model_full \
+  --full-mesh
+```
+
+`--full-mesh` is a guard: it fails unless the raw metadata records
+`region = all`. This prevents accidentally labeling an `ulvz-window` subset as
+the whole mesh. The full-mesh outputs use distinct names:
+
+- `ulvz_full_model_gll_points.vtp`
+- `ulvz_full_model_mesh_rank000000.vtu`
+- `ulvz_full_model_mesh_rank000001.vtu`
+- `ulvz_full_model_mesh.pvtu`
+- `ulvz_full_model_metadata.json`
+
+For an explicit welded full-mesh file:
+
+```bash
+python ../../../scripts/ulvz_mesh_viz/export_paraview_model.py \
+  --data-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/reports \
+  --out-dir s40rts_ulvz_mesh_work_YYYYMMDD_HHMMSS_PID/paraview_model_full_welded \
+  --full-mesh \
+  --weld-coordinates \
+  --weld-tolerance 1.0e-6
+```
+
+This writes `ulvz_full_model_mesh_welded.vtu`.
+
 ### ParaView File Types And Geometry Interpretation
 
 The diagnostic and final-model ParaView files answer different questions and
@@ -170,6 +210,7 @@ should not be interpreted as the same mesh:
 | `paraview/ulvz_mesh.pvtu` | Corner-only diagnostic hexahedra selected from the ULVZ window | Inspect coarse element-level diagnostic summaries |
 | `paraview_model/ulvz_model_gll_points.vtp` | Final-model GLL points selected for model export | Inspect point values of final `vp`, `vs`, `rho`, TISO fields, and before/after ratios |
 | `paraview_model/ulvz_model_mesh.pvtu` | GLL-node-resolved linear hexahedral subcells | Use ParaView `Slice`, `Clip`, `Threshold`, and `Extract Surface` on final model fields |
+| `paraview_model_full/ulvz_full_model_mesh.pvtu` | GLL-node-resolved linear hexahedral subcells for `region=all` | Inspect the whole exported fixture mesh shape with final fields and ratios |
 
 `paraview/ulvz_gll_points.vtp` can look like a broad curved partial shell
 because the diagnostic point export includes a sparse sample of outside points
@@ -190,6 +231,12 @@ For comparing the same selected local geometry, compare
 `paraview/ulvz_gll_points.vtp` with the model PVTU. The former pair covers the
 same ULVZ-window bounds; the diagnostic mesh has four corner-only cells, while
 the final model mesh has 256 GLL subcells and carries final material fields.
+
+In ParaView, `Surface With Edges` draws the edges of the exported VTK cells.
+For `ulvz_model_mesh.pvtu` and `ulvz_full_model_mesh.pvtu`, those are real
+edges of the linear GLL-subcell visualization written by this exporter. They
+are not a display of SPECFEM's continuous high-order spectral-element mapping
+between GLL nodes.
 
 ## 4. Quick-Start Workflow
 
@@ -758,6 +805,13 @@ python scripts/ulvz_mesh_viz/export_paraview_model.py \
 Open `ulvz_model_mesh.pvtu` in ParaView and color by `vp`, `vs`, or `rho`.
 Useful filters are `Slice`, `Clip`, `Threshold`, and `Extract Surface`.
 
+For the whole exported fixture mesh, generate raw records with
+`PARAVIEW_MODEL_EXPORT_REGION=all` and pass `--full-mesh` to the converter.
+Open `ulvz_full_model_mesh.pvtu` for rank-local geometry or
+`ulvz_full_model_mesh_welded.vtu` for the explicit coordinate-welded single
+file. The same point-data fields are present: final enabled-model
+`vp/vs/rho`, TISO fields, and before/after ratio arrays.
+
 ### Preserved Task 3F Validation
 
 The final-model ParaView path was validated on:
@@ -790,6 +844,36 @@ Observed results for that preserved run:
   this fixture
 - negative-volume count: 0
 - near-zero-volume count: 0 with threshold `1.0e-9 km^3`
+
+The full-mesh final-model path was validated on:
+
+```text
+specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260703_102747_261318
+```
+
+Validation reports:
+
+```text
+paraview_model_full/full_mesh_real_fixture_validation.json
+paraview_model_full/full_mesh_real_fixture_validation.txt
+```
+
+Observed full-mesh results:
+
+- raw metadata `region = all`
+- `coordinate_units = km`
+- input records: 1,080,000
+- spectral elements: 8,640
+- exported GLL subcells: 552,960
+- rank-local field-aware nodes: 621,922
+- coordinate-welded nodes: 614,141 with `weld_tolerance = 1.0e-6 km`
+- field-aware split count: 38,667, preserving coincident points with distinct
+  material or ratio values at discontinuities
+- readable `ulvz_full_model_gll_points.vtp`, both rank-local VTU pieces,
+  `ulvz_full_model_mesh.pvtu`, and `ulvz_full_model_mesh_welded.vtu`
+- required final field arrays and before/after ratio arrays are present
+- negative-volume count: 0
+- near-zero-volume count: 0 with threshold `1.0e-12 km^3`
 
 The earlier diagnostic ParaView path was validated on:
 
