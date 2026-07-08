@@ -29,6 +29,7 @@ resolution study.
 | Task 3E visualization export and static plotting | Implemented under `scripts/ulvz_mesh_viz/` with CSV/JSON schema `ulvz_mesh_viz.v1` | Verified on preserved fixture outputs and static figures in latest workdir | Default static plotting path is documented and tested to avoid PyVista, VTK, Cartopy, and Meshio imports |
 | Task 3F ParaView export | Diagnostic mesh exporters and final model exporter are implemented; final model path uses `solver_data.bin` arrays and `export_paraview_model.py`; `--full-mesh` exports `region=all` records with distinct `ulvz_full_model_*` names | implemented and verified on preserved real fixture `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226`; latest combined diagnostic/model ParaView generation is `s40rts_ulvz_mesh_work_20260702_165805_185535`; latest full-mesh final model generation is `s40rts_ulvz_mesh_work_20260703_102747_261318` | Final model validation records readable VTP, both VTU rank pieces, PVTU, welded VTU, `vp/vs/rho`, TISO, and before/after ratio arrays, gzip-verified raw rank CSVs, km coordinates, field-aware split preservation, and zero negative/near-zero volumes |
 | Task 4A/4B/4C reusable model post-processing | implemented and verified for `scripts/ulvz_model_postprocess/` with schema `ulvz_model_postprocess.v1`: CLI, schema, rank-local `.npy` store, synthetic workflows, comparison/plot/ParaView behavior, SPECFEM layout inspection, and Task 4C physical-field extraction for compatible local sequential reg1 databases | implemented and verified on preserved Task 3D `reference_disabled` and `ulvz_enabled` fixture databases in `task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T221100Z`: external `DATABASES_MPI` paths, full extraction, delayed comparison, static plots, VTP/PVTP and VTU/PVTU reopening, and Task 3D CSV consistency cross-check all passed; fresh regressions report `tests/ulvz_model_postprocess: 15 passed` and `tests/ulvz_mesh_viz: 26 passed` | Supported real workflow is limited to compatible `proc*_reg1_solver_data.bin` isotropic/TISO layouts. Production-scale and high-frequency validation remain unverified. Still unsupported: ADIOS/HDF5, non-reg1 extraction, full anisotropic mantle `cij`, standalone model-data paths, cross-mesh interpolation, true sub-rank record streaming, and arbitrary incompatible SPECFEM binary layouts |
+| Task 4E standalone model post-processing package | implemented and verified for `packages/ulvz_model_postprocess/`: copyable Python package, `ulvz-model-postprocess` console script, `python -m ulvz_model_postprocess`, standalone docs, tests, and bundled SPECFEM extractor extension | implemented and verified on the preserved Task 3D fixture through the standalone entry point with selected extraction, delayed comparison, static plot, and ParaView `both` export; package tests report `8 passed`; old `scripts.ulvz_model_postprocess` still works | Real raw `DATABASES_MPI` validation/extraction requires explicit compatible `--extractor`; production-scale/high-frequency validation remains unverified; unsupported layouts from Task 4C remain unsupported and no support for arbitrary incompatible SPECFEM outputs is claimed |
 
 ## Runtime Contract
 
@@ -134,6 +135,7 @@ Key implementation files:
 - `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_fixture/DATA/Par_file`
 - `scripts/ulvz_mesh_viz/`
 - `tests/ulvz_mesh_viz/test_ulvz_mesh_viz.py`
+- `packages/ulvz_model_postprocess/`
 - `docs/*.md`
 
 Generated artifacts currently include:
@@ -393,6 +395,69 @@ Capability boundary:
   TISO physical fields, one-model extraction without ratios, delayed
   comparison after two compatible extracted manifests exist, static plotting,
   and ParaView point-cloud and linearized-mesh export.
+- Still unsupported or unverified: production-scale/high-frequency validation,
+  ADIOS/HDF5 databases, non-reg1 extraction, full anisotropic `cij` export,
+  standalone model-data paths plus separate geometry, cross-mesh
+  interpolation/resampling, true sub-rank record streaming, and arbitrary
+  incompatible SPECFEM binary layouts.
+
+### Task 4E Standalone Model Post-Processing Package
+
+Evidence for implementation:
+
+- `packages/ulvz_model_postprocess/pyproject.toml`
+- `packages/ulvz_model_postprocess/src/ulvz_model_postprocess/`
+- `packages/ulvz_model_postprocess/specfem_extension/`
+- `packages/ulvz_model_postprocess/tests/test_standalone_entrypoints.py`
+- `packages/ulvz_model_postprocess/README.md`
+- `packages/ulvz_model_postprocess/docs/ulvz_model_postprocessing_guide.md`
+- `docs/task_4d_standalone_package_plan.md`
+
+Verified behavior on 2026-07-08 using
+`/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python`:
+
+- `python -m pytest packages/ulvz_model_postprocess/tests -q` reported
+  `8 passed`.
+- `python -m pytest tests/ulvz_model_postprocess -q` reported `15 passed`,
+  preserving the old `scripts.ulvz_model_postprocess` Task 4C path.
+- `python -m pytest tests/ulvz_mesh_viz -q` reported `26 passed`.
+- `python -m scripts.ulvz_model_postprocess --help` and
+  `PYTHONPATH=packages/ulvz_model_postprocess/src python -m ulvz_model_postprocess --help`
+  both returned successfully.
+- Editable installation was verified in isolated virtual environment
+  `/tmp/ulvz_model_postprocess_task4e_venv` with
+  `pip install -e packages/ulvz_model_postprocess --no-deps --no-build-isolation`;
+  both `ulvz-model-postprocess --help` and
+  `python -m ulvz_model_postprocess --help` returned successfully.
+- Standalone preserved-fixture smoke output under
+  `/tmp/ulvz_model_postprocess_task4e_acceptance` verified `validate`,
+  selected `extract` for `reference_disabled` and `ulvz_enabled`, delayed
+  `compare`, histogram `plot`, and ParaView `--paraview-kind both` on the
+  preserved Task 3D fixture.
+- `git -C specfem3d_globe diff --check` passed. The top-level
+  `git diff --check` command is not applicable because the mounted workspace
+  root is not a Git repository.
+
+Task 4E standalone runtime contract:
+
+- Raw SPECFEM `DATABASES_MPI` validation and extraction require explicit
+  `--extractor /path/to/specfem3d_globe/bin/xulvz_model_extract`.
+- The standalone package does not auto-discover
+  `specfem3d_globe/bin/xulvz_model_extract` relative to the old repository.
+- The bundled extractor extension contains the verified Fortran source, a
+  build-rule patch for `xulvz_model_extract`, and a dry-run-by-default
+  installer.
+- The current Fortran extractor `--help` is treated as a safe usage/diagnostic
+  command and may exit with code 2 after printing usage.
+- `compare`, `plot`, and `paraview` operate on extracted manifests and reject
+  raw `DATABASES_MPI` directories.
+- The old in-repository `scripts.ulvz_model_postprocess` entry point remains
+  available; no deprecation or removal occurred in Task 4E.
+
+Capability boundary remains unchanged from Task 4C:
+
+- Supported verified layout: compatible local sequential reg1
+  `proc*_reg1_solver_data.bin` with isotropic or TISO physical fields.
 - Still unsupported or unverified: production-scale/high-frequency validation,
   ADIOS/HDF5 databases, non-reg1 extraction, full anisotropic `cij` export,
   standalone model-data paths plus separate geometry, cross-mesh

@@ -41,6 +41,7 @@ Do not infer physical parameters from convenience.
 - Do not add new dependencies unless necessary.
 - Never intall and update python environment, ask the user to do it.
 - Always plan before really coding.
+- Do not write test outputs, diagnostic outputs, logs, plots, or temporary generated files directly into the repository root. If such outputs need to be kept near the main working directory, place them under `results/`.
 
 
 ## Python environment

@@ -1,0 +1,22 @@
+diff --git a/src/auxiliaries/rules.mk b/src/auxiliaries/rules.mk
+index d352bf79..24c60eac 100644
+--- a/src/auxiliaries/rules.mk
++++ b/src/auxiliaries/rules.mk
+@@ -43,0 +44 @@ auxiliaries_TARGETS = \
++	$E/xulvz_model_extract \
+@@ -82,0 +84 @@ auxiliaries_OBJECTS = \
++	$(xulvz_model_extract_OBJECTS) \
+@@ -570,0 +573,13 @@ $O/extract_database.aux.o: $O/specfem3D_par.solverstatic_module.o
++xulvz_model_extract_OBJECTS = \
++	$O/ulvz_model_extract.aux.o \
++	$(EMPTY_MACRO)
++
++xulvz_model_extract_SHARED_OBJECTS = \
++	$O/shared_par.shared_module.o \
++	$(EMPTY_MACRO)
++
++${E}/xulvz_model_extract: $(xulvz_model_extract_OBJECTS) $(xulvz_model_extract_SHARED_OBJECTS)
++	${MPIFCCOMPILE_CHECK} -o $@ $+ $(MPILIBS)
++
++#######################################
++

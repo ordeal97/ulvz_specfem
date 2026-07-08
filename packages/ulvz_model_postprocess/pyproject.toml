@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ulvz-model-postprocess"
+version = "0.1.0"
+description = "Standalone ULVZ SPECFEM model post-processing tools"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  {name = "ULVZ SPECFEM project"}
+]
+dependencies = [
+  "numpy",
+  "matplotlib",
+]
+
+[project.optional-dependencies]
+paraview = ["vtk"]
+test = ["pytest", "vtk"]
+
+[project.scripts]
+ulvz-model-postprocess = "ulvz_model_postprocess.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
