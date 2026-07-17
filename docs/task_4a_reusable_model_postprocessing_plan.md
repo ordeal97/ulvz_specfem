@@ -298,7 +298,7 @@ documented interface.
 Use:
 
 ```bash
-/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python
+${ULVZ_PYTHON:-python3}
 ```
 
 Headless plotting environment:
@@ -312,17 +312,17 @@ export XDG_CACHE_HOME=/tmp/ulvz_model_postprocess_xdg
 Core checks:
 
 ```bash
-/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python \
+${ULVZ_PYTHON:-python3} \
   -m pytest tests/ulvz_model_postprocess -q
 
-/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python \
+${ULVZ_PYTHON:-python3} \
   -m pytest tests/ulvz_mesh_viz -q
 ```
 
 VTK availability check:
 
 ```bash
-/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python \
+${ULVZ_PYTHON:-python3} \
   -c "import vtkmodules; print('vtk ok')"
 ```
 

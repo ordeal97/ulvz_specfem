@@ -514,8 +514,8 @@ The required verification tests are:
 Inspection commands used for this document:
 
 ```bash
-sed -n '1,240p' /home/xjiang/.codex/plugins/cache/openai-curated/superpowers/3fdeeb49/skills/using-superpowers/SKILL.md
-sed -n '1,260p' /home/xjiang/.codex/plugins/cache/openai-curated/superpowers/3fdeeb49/skills/verification-before-completion/SKILL.md
+# The original local skill-cache inspection is intentionally omitted from the
+# public workflow because its path is machine-specific.
 test -e docs/s40rts_ulvz_manual_translation.md && nl -ba docs/s40rts_ulvz_manual_translation.md | sed -n '1,80p' || true
 nl -ba specfem3d_globe/doc/USER_MANUAL/12_changing_the_model.tex | sed -n '105,197p'
 nl -ba specfem3d_globe/src/meshfem3D/model_s40rts.f90 | sed -n '1,360p'

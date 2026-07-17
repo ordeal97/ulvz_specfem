@@ -88,7 +88,7 @@ OMP_NUM_THREADS=${OMP_NUM_THREADS:-1}
 Final observed MPI command:
 
 ```text
-mpirun -np 2 /import/freenas-m-01-seismology/xjiang/ulvz_specfem/specfem3d_globe/bin/xmeshfem3D
+mpirun -np 2 "$SPECFEM_ROOT/bin/xmeshfem3D"
 ```
 
 Final observed resource summary:

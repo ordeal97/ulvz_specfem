@@ -1,0 +1,6 @@
+name: interior_circle
+type: circle
+center:
+  latitude_deg: 0.0
+  longitude_deg: -20.0
+radius_km: 100.0

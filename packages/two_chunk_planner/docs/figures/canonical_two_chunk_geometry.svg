@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430" role="img" aria-labelledby="title desc">
+  <title id="title">Canonical two-chunk AB and AC geometry</title>
+  <desc id="desc">AB central chunk and supported-left AC chunk, their shared interface, C1, C2, and external boundaries.</desc>
+  <style>text{font-family:Arial,sans-serif;fill:#1f2937}.label{font-size:19px;font-weight:bold}.small{font-size:14px}.edge{stroke:#1f2937;stroke-width:3;fill:none}.outer{stroke:#b91c1c;stroke-width:5;fill:none}.interface{stroke:#d97706;stroke-width:7}.point{fill:#111827}</style>
+  <rect width="900" height="430" fill="#f8fafc"/>
+  <polygon points="180,95 510,95 510,335 180,335" fill="#dbeafe" stroke="#2563eb" stroke-width="3"/>
+  <polygon points="510,95 740,145 740,285 510,335" fill="#dcfce7" stroke="#16a34a" stroke-width="3"/>
+  <path class="outer" d="M180 95 L510 95 M180 95 L180 335 M180 335 L510 335 M510 95 L740 145 L740 285 L510 335"/>
+  <path class="interface" d="M510 95 L510 335"/>
+  <circle class="point" cx="510" cy="95" r="8"/><circle class="point" cx="510" cy="335" r="8"/>
+  <text class="label" x="285" y="205">AB / chunk 1</text><text class="small" x="300" y="228">central chunk</text>
+  <text class="label" x="570" y="205">AC / chunk 2</text><text class="small" x="555" y="228">supported-left attachment</text>
+  <text class="label" x="525" y="88">C1</text><text class="label" x="525" y="360">C2</text>
+  <text class="small" x="525" y="215" fill="#d97706">shared AB–AC interface</text>
+  <text class="small" x="185" y="75" fill="#b91c1c">external boundaries (red)</text>
+  <path class="edge" d="M330 180 l60 0 m-8 -8 l8 8 l-8 8"/><text class="small" x="330" y="168">local xi</text>
+  <path class="edge" d="M330 180 l0 60 m-8 -8 l8 8 l8 -8"/><text class="small" x="342" y="235">local eta</text>
+  <circle cx="345" cy="215" r="6" fill="#7c3aed"/><text class="small" x="355" y="216">central point; gamma rotates the whole AB+AC system</text>
+  <text class="small" x="180" y="400">Schematic only: the planner uses cubed-sphere Cartesian geometry, not this planar drawing.</text>
+</svg>

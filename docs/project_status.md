@@ -1,9 +1,9 @@
 # ULVZ SPECFEM Project Status
 
-Last updated: 2026-07-08
+Last updated: 2026-07-16
 
 This file summarizes the current state of
-`/import/freenas-m-01-seismology/xjiang/ulvz_specfem`. It is based on
+the project working tree. It is based on
 repository files, versioned documentation, current command output, and
 preserved test artifacts. It does not rely on prior chat context.
 
@@ -30,6 +30,9 @@ resolution study.
 | Task 3F ParaView export | Diagnostic mesh exporters and final model exporter are implemented; final model path uses `solver_data.bin` arrays and `export_paraview_model.py`; `--full-mesh` exports `region=all` records with distinct `ulvz_full_model_*` names | implemented and verified on preserved real fixture `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226`; latest combined diagnostic/model ParaView generation is `s40rts_ulvz_mesh_work_20260702_165805_185535`; latest full-mesh final model generation is `s40rts_ulvz_mesh_work_20260703_102747_261318` | Final model validation records readable VTP, both VTU rank pieces, PVTU, welded VTU, `vp/vs/rho`, TISO, and before/after ratio arrays, gzip-verified raw rank CSVs, km coordinates, field-aware split preservation, and zero negative/near-zero volumes |
 | Task 4A/4B/4C reusable model post-processing | implemented and verified for `scripts/ulvz_model_postprocess/` with schema `ulvz_model_postprocess.v1`: CLI, schema, rank-local `.npy` store, synthetic workflows, comparison/plot/ParaView behavior, SPECFEM layout inspection, and Task 4C physical-field extraction for compatible local sequential reg1 databases | implemented and verified on preserved Task 3D `reference_disabled` and `ulvz_enabled` fixture databases in `task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T221100Z`: external `DATABASES_MPI` paths, full extraction, delayed comparison, static plots, VTP/PVTP and VTU/PVTU reopening, and Task 3D CSV consistency cross-check all passed; fresh regressions report `tests/ulvz_model_postprocess: 15 passed` and `tests/ulvz_mesh_viz: 26 passed` | Supported real workflow is limited to compatible `proc*_reg1_solver_data.bin` isotropic/TISO layouts. Production-scale and high-frequency validation remain unverified. Still unsupported: ADIOS/HDF5, non-reg1 extraction, full anisotropic mantle `cij`, standalone model-data paths, cross-mesh interpolation, true sub-rank record streaming, and arbitrary incompatible SPECFEM binary layouts |
 | Task 4E standalone model post-processing package | implemented and verified for `packages/ulvz_model_postprocess/`: copyable Python package, `ulvz-model-postprocess` console script, `python -m ulvz_model_postprocess`, standalone docs, tests, and bundled SPECFEM extractor extension | implemented and verified on the preserved Task 3D fixture through the standalone entry point with selected extraction, delayed comparison, static plot, and ParaView `both` export; package tests report `8 passed`; old `scripts.ulvz_model_postprocess` still works | Real raw `DATABASES_MPI` validation/extraction requires explicit compatible `--extractor`; production-scale/high-frequency validation remains unverified; unsupported layouts from Task 4C remain unsupported and no support for arbitrary incompatible SPECFEM outputs is claimed |
+| Two-chunk SPECFEM implementation and formal runtime continuation | The accepted project-local patch is documented at `patches/specfem3d_globe/two_chunk_endpoints/`; no production build rule changed | Fresh isolated NEX=96 patched/reversed/v8 builds completed. Patched 2/8/12-rank fingerprints match; topology has reciprocal C1/C2 two-member paths across three depths and no internal Stacey face. Reversed and clean v8 reproduce the historical `(0,1,0)` path. v3 waveform symmetry, fresh one-chunk, and rerun six-chunk regressions pass. | Current patch is formally accepted for the canonical 90° configuration: max NRMS `2.92e-6`, max relative energy difference `2.86e-6`; `canonical_90deg_fixture_ready=true`. General two-chunk classification remains B; Kim/Song Hawaiʻi production inputs remain incomplete. See `docs/two_chunk_waveform_symmetry_closure.md` and its result root. |
+| One-chunk Hawai'i/Yuan coverage audit | Source constraints, 90°–150° low-resolution width meshes, constructed-geometry search, short solver smoke, and a 20-minute solver duration run completed; no production source change | All five width meshes had positive Jacobians; final 135° source/station smoke completed with nonzero waveforms; long run completed 6500 steps | Hawai'i and individual Yuan geometry classifications are conditional on locally constructed inputs. The completed long run lacks an independent larger-domain/reference comparison to identify boundary reflections, so production-safe boundary windows remain unverified; see `docs/one_chunk_hawaii_yuan_analysis.md` |
+| One-chunk 135° boundary/domain validation | Independent 135° one-chunk and 6-chunk global meshes/runtimes, actual GLL-spacing comparison, 16 deep/shallow probes, a 120° sensitivity run, and complete-record post-processing completed; no production source change | Both 135° and global solvers completed 16,800 steps with all 17 receivers; 135° target-region spacing matches global within the recorded 15% criterion | Hawai'i remains B and `production_safe=false`. Complete-record diagnostics do not make one chunk globally equivalent: no science-window residual was uniquely attributable to a lateral boundary, probe returns are not uniquely separable, and the 120° test is spacing-confounded. See `docs/one_chunk_ulvz_simulation_assessment.md`, `docs/one_chunk_boundary_validation.md`, and timestamped results. |
 
 ## Runtime Contract
 
@@ -207,7 +210,7 @@ Latest preserved run provenance:
 ```text
 SPECFEM version: 8.1.1
 git commit: 9c312cb2c991b47484a7f302775f4f01ed9470f8
-MPI command: mpirun -np 2 /import/freenas-m-01-seismology/xjiang/ulvz_specfem/specfem3d_globe/bin/xmeshfem3D
+MPI command: mpirun -np 2 "$SPECFEM_ROOT/bin/xmeshfem3D"
 OMP_NUM_THREADS: 1
 ```
 
@@ -334,7 +337,7 @@ Real preserved-fixture ParaView status:
   rank-local VTU pieces, `ulvz_mesh.pvtu`, and
   `paraview_welded/ulvz_mesh_welded.vtu`.
 - Observed environment for the validation was
-  `/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python`
+  `$ULVZ_PYTHON`
   with Python 3.11.15 and VTK 9.6.2.
 - The PVTU contains 24 rank-local points and 4 hexahedral cells. The welded
   VTU contains 18 points and 4 cells with `weld_tolerance = 1.0e-6` km.
@@ -348,7 +351,7 @@ Real preserved-fixture ParaView status:
   `python -m pytest tests/ulvz_mesh_viz/test_ulvz_mesh_viz.py -q` reported
   `23 passed in 25.07s`.
 - Python tests were rerun after adding full-mesh output naming:
-  `/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python -m pytest tests/ulvz_mesh_viz/test_ulvz_mesh_viz.py -q`
+  `$ULVZ_PYTHON -m pytest tests/ulvz_mesh_viz/test_ulvz_mesh_viz.py -q`
   reported `26 passed in 26.77s`.
 
 ### Task 4A/4B/4C Reusable Model Post-Processing
@@ -385,7 +388,7 @@ Latest preserved Task 4C acceptance:
   `2.220446049250313e-16`. This is a fixture consistency cross-check, not an
   independent scientific validation.
 - Fresh regression commands using
-  `/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python`
+  `$ULVZ_PYTHON`
   reported `tests/ulvz_model_postprocess: 15 passed` and
   `tests/ulvz_mesh_viz: 26 passed`.
 
@@ -414,7 +417,7 @@ Evidence for implementation:
 - `docs/task_4d_standalone_package_plan.md`
 
 Verified behavior on 2026-07-08 using
-`/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python`:
+`$ULVZ_PYTHON`:
 
 - `python -m pytest packages/ulvz_model_postprocess/tests -q` reported
   `8 passed`.
@@ -487,7 +490,7 @@ Python package availability is interpreter-specific. Latest Task 3F optional
 VTK environment check used the project interpreter:
 
 ```bash
-/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python - <<'PY'
+$ULVZ_PYTHON - <<'PY'
 import importlib.util
 import sys
 print('sys.executable=' + sys.executable)
@@ -502,7 +505,7 @@ PY
 Output:
 
 ```text
-sys.executable=/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python
+sys.executable=$ULVZ_PYTHON
 vtk=True
 pyvista=True
 vtk_version=9.6.2
@@ -517,7 +520,7 @@ The current project publishing workflow is documented in
 `docs/github_publish_workflow.md`. The clean publishing repository is:
 
 ```text
-/import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish
+$PUBLISH_REPO
 ```
 
 Latest GitHub publication:
@@ -802,7 +805,7 @@ Preserved test artifacts:
 Current command evidence:
 
 - `git -C specfem3d_globe status --short`
-- `/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python - <<'PY' ... importlib.util.find_spec(...) ... PY`
+- `$ULVZ_PYTHON - <<'PY' ... importlib.util.find_spec(...) ... PY`
 - `python -m pytest tests/ulvz_mesh_viz/test_ulvz_mesh_viz.py -q`
 
 ## Appendix B: Earlier Retained Work Directories And Artifact Policy
@@ -819,3 +822,85 @@ Generated artifacts should generally remain out of source-control commits
 unless intentionally retained for provenance. The publishing workflow in
 `docs/github_publish_workflow.md` excludes SPECFEM build outputs and
 `specfem3d_globe/tests/meshfem3D/results.log` by default.
+
+## 2026-07-16 two-chunk waveform-symmetry closure
+
+`results/two_chunk_waveform_symmetry_closure_20260716T144230Z/` 完成 v2
+fixture/window 审计和独立 v3 closure。v2 的 0--25 s 窗口在最早直达波之前，因而不
+是有效严格波形 fixture。符号精确、内域近场 v3 在 2/8/12 ranks 均通过 1e-5
+NRMS/能量 gate；fresh one-chunk clean/patched 和重新运行的 six-chunk regression
+也通过。当前版本 patch 已正式接受；一般 two-chunk 分类仍为 B，Kim/Song Hawaiʻi
+production 仍缺作者输入。
+
+## 2026-07-16 two-chunk post-processing validation and patch-package relocation
+
+已用 canonical C1/C2、2/8/12-rank 的 six `DATABASES_MPI` fixtures 验证
+`ulvz_model_postprocess`：layout inspection、reg1 extraction、数组有限值/shape、
+`vp` 绘图和 rank-local linear-mesh ParaView 均通过；2-rank C1/C2 self-compare
+残差为零。该结论只覆盖 rank-local 后处理输出，未验证跨 rank/chunk 的全局焊接或
+去重；不同 MPI decomposition 的 compare 因 rank inventory 不同按设计拒绝。详见
+`docs/two_chunk_postprocess_support.md` 和
+`results/two_chunk_postprocess_support_20260716T162353Z/07_reports/acceptance_matrix.json`。
+
+已将 two-chunk forward-mesher patch package 从后处理扩展目录移至
+`patches/specfem3d_globe/two_chunk_endpoints/`；patch 字节哈希不变，迁移后 clean
+apply/reverse 验证通过。未修改正式构建规则、未 commit、未 push。
+
+## 2026-07-16 canonical two-chunk bilingual guide and teaching case
+
+新增 `docs/two_chunk_regional_simulations_guide.md` 及其英文/中文版，说明当前项目
+已验收的 canonical two-chunk regional mode、patch provenance、Par_file、source/
+station placement、travel-time-based boundary assessment 与故障排查。新增
+`cases/two_chunk_canonical_90deg/`：它提供 NEX=96、2x2/chunk（8 ranks）的教学输入、
+只读 `audit_geometry.py`、示意图生成器和拒绝覆盖已有 run directory 的 runner。
+教学台站覆盖两个 chunk，但不被声明为 Kim/Song 或生产波形输入。静态检查确认双语
+章节/参数/hash/链接一致，且案例输入符合当前 template/readers；未运行 mesher 或
+solver，未修改正式源码、构建规则、commit 或 push。
+
+## 2026-07-16 two-chunk non-90° equal-square width closure
+
+当前源码在 `NCHUNKS > 1` 时明确要求
+`ANGULAR_WIDTH_XI_IN_DEGREES = 90`（目的为几何匹配）。在 NEX=96、等方形
+60°、75°、89°、91°、105° 输入上，mesher 均在该守卫处停止，因而这些案例只有
+`input_rejected` 证据；没有构造网格，不能声称测得 gap、overlap、拓扑、Stacey、
+分解或波形失败。新鲜 90° 2-rank 控制完成，接口 Cartesian 配对/C1/C2 endpoint
+残差为零、Jacobian 为正且 internal Stacey 为零；正式 2/8/12-rank 接受仍引用此前
+topology/waveform closure。结论是 canonical 90° xi connection 是唯一正式支持的
+连接宽度；`xi=90°, eta!=90°` 的矩形两块情形未测试；非 90° xi 支持需新的 placement/
+interface-mapping 实现。`general_two_chunk_mode_classification=B` 保持不变。详见
+`docs/two_chunk_non90_width_acceptance.md` 与
+`results/two_chunk_non90_width_acceptance_20260716T171151Z/`。未修改正式源码、构建
+规则或 accepted patch；未 commit/push。
+
+## 2026-07-16 canonical two-chunk planner
+
+新增独立 `packages/two_chunk_planner/`：它在不运行 mesher/database/solver、
+不修改 SPECFEM 输入或 patch 的前提下，使用当前 canonical 90° AB/AC 几何搜索
+center/gamma、审计 source/stations/path/target margins，并建议受当前 NEX/MPI
+规则约束的资源配置。TauP 仅用于可选 phase-aware 路径覆盖、CMB 邻近代理和带采样
+元数据的 polyline 长度估计；不用于 regional 外边界污染时间。v1 的地表边界弧时间
+代理固定标记为 `heuristic_not_conservative`，不作为 hard reject。最多输出五个可行
+候选；无可行候选仍输出审计和 rejection summary。详见 `docs/two_chunk_planner.md`。
+该工具不扩大已验收几何范围，`general_two_chunk_mode_classification=B` 保持不变；
+未修改正式源码、构建规则或 accepted patch，未运行大型模拟，未 commit/push。
+
+## 2026-07-17 two-chunk planner phase-aware runtime acceptance
+
+在没有运行 mesher/database/solver 的条件下，`packages/two_chunk_planner/` 已以项目
+解释器完成真实 ObsPy TauP `prem` phase-aware 验收：Python 3.11.15、NumPy 2.4.6、
+ObsPy 1.5.0、geographiclib 2.1，且 `HAS_GEOGRAPHICLIB=True`。合成（非 Kim/Song）
+AB→AC fixture 的 source 0°/0°/50 km 和 receiver 0°/−125° 经实际分类为 central AB
+与 supported-left AC；严格模式同时获得 Pdiff 和 Sdiff 的地理路径、到时、Cartesian
+polyline 长度与 CMB-near proxy。resample=false/true 的到时和最大深度一致，但长度差
+Pdiff 14.7813 km（0.130094%）、Sdiff 8.6426 km（0.076131%）；两种离散设置不足以
+构成收敛证明，故 `sampling_stability_status=indeterminate`。等价日期变更线旋转保留
+125° 距离和到时、将两相路径正确分为两个绘图段。严格未知相位全局失败并列出缺失
+pair，partial 模式不替代相位且写出 inventory。边界时间仍仅为
+`heuristic_not_conservative`、`hard_constraint_used=false`、
+`boundary_time_production_safe=false`。
+
+证据位于 `results/two_chunk_planner_phase_aware_acceptance_20260717T085352Z/`；完整
+pytest 为 13 passed。`phase_aware_runtime_validated=true` 只表示 canonical geometry
+planning runtime；`canonical_planner_v1_classification` 为
+`canonical_geometry_planning_validated__waveform_and_boundary_production_validation_required`。
+未修改正式源码、build rules 或 accepted patch，未运行大型模拟，未 commit/push。

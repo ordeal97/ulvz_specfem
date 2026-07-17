@@ -1,0 +1,252 @@
+{
+  "schema": "ulvz_project_local_two_chunk_patch.v1",
+  "project_local_use_only": true,
+  "upstream_submission_planned": false,
+  "package_location": "patches/specfem3d_globe/two_chunk_endpoints",
+  "relocated_from": "packages/ulvz_model_postprocess/specfem_extension/patches",
+  "patch_file": "specfem3d_globe_two_chunk_endpoints.patch",
+  "patch_sha256": "4496cea542d26f38575ec1fa9ae28635ec2a201958eb898702331c7db5fe4a60",
+  "changed_files": [
+    "src/meshfem3D/create_chunk_buffers.f90"
+  ],
+  "source_provenance": {
+    "nested_head": "9c312cb2c991b47484a7f302775f4f01ed9470f8",
+    "baseline_target_sha256": "fd4137713e55e14ec664a9d55487b64c2b9bf73499c1f82780f1f5a6e63b088f",
+    "formal_candidate_sha256": "8c64f1d1d415ec6c0792f06474dafcffcc698da6ee03ecd21bfd4fdc90b64857",
+    "validated_isolated_runtime_source_sha256": "c533c710b213fddd2816b53dee46ef48dcc59992cdb0909b614f8e2a8a91bc31",
+    "runtime_source_semantic_equivalence": true,
+    "runtime_difference_class": "diagnostic_only",
+    "formal_candidate_vs_runtime_diff": {
+      "path": "src/meshfem3D/create_chunk_buffers.f90",
+      "removed": "logical,parameter :: DEBUG = .false.",
+      "added": "logical,parameter :: DEBUG = .true.",
+      "conditions_or_branches_changed": false,
+      "loop_bounds_changed": false,
+      "rank_mappings_changed": false,
+      "buffer_entries_changed": false,
+      "counters_changed": false,
+      "mpi_message_cardinality_changed": false
+    },
+    "runtime_source_diff_complete": [
+      "--- formal_candidate/src/meshfem3D/create_chunk_buffers.f90",
+      "+++ validated_runtime_source/src/meshfem3D/create_chunk_buffers.f90",
+      "@@ -134,7 +134,7 @@",
+      "   ! A valid MPI rank is non-negative; do not use rank zero as a sentinel.",
+      "   integer, parameter :: INVALID_RANK = -1",
+      " ",
+      "-  logical,parameter :: DEBUG = .false.",
+      "+  logical,parameter :: DEBUG = .true.",
+      " ",
+      "   ! user output"
+    ]
+  },
+  "semantic_hunks": [
+    {
+      "baseline_lines": "128-135",
+      "candidate_lines": "128-139",
+      "purpose": "Declare NUM_CORNER_MEMBERS and INVALID_RANK so a valid rank zero is never treated as an unused corner member."
+    },
+    {
+      "baseline_lines": "152-172",
+      "candidate_lines": "156-184",
+      "purpose": "Allocate two corner records for NCHUNKS=2 and count the xi-constant AB--AC face in the eta direction with NPROC_ETA."
+    },
+    {
+      "baseline_lines": "187-204",
+      "candidate_lines": "201-218",
+      "purpose": "Use INVALID_RANK consistently for unused face and corner slots."
+    },
+    {
+      "baseline_lines": "826-895",
+      "candidate_lines": "840-895",
+      "purpose": "Use two members for two chunks; assemble C1 eta-min as AB(0,0)/AC(NPROC_XI-1,0) and C2 eta-max as AB(0,NPROC_ETA-1)/AC(NPROC_XI-1,NPROC_ETA-1), while retaining the historical three-member logic for other chunk counts."
+    },
+    {
+      "baseline_lines": "952-972",
+      "candidate_lines": "986-1004",
+      "purpose": "Validate and iterate only actual corner members, preventing dereference or validation of an unused third two-chunk member."
+    },
+    {
+      "baseline_lines": "1032-1036",
+      "candidate_lines": "1064-1068",
+      "purpose": "Allow the two legitimate endpoint records per two-chunk slice while retaining the one-corner guard for other configurations."
+    }
+  ],
+  "exact_changed_hunk_ranges": [
+    {"baseline": "130", "candidate": "131", "kind": "NUM_CORNER_MEMBERS declaration"},
+    {"baseline": "132", "candidate": "134-136", "kind": "INVALID_RANK declaration and comment"},
+    {"baseline": "155", "candidate": "159", "kind": "separate NCHUNKS=1 branch"},
+    {"baseline": "158", "candidate": "163-168", "kind": "NCHUNKS=2 two-corner branch"},
+    {"baseline": "171-172", "candidate": "181-186", "kind": "NPROC_ETA interface segmentation"},
+    {"baseline": "190-191,199-201,834", "candidate": "204-205,213-215,856", "kind": "INVALID_RANK initializers"},
+    {"baseline": "828", "candidate": "843-850", "kind": "two-member cardinality selection"},
+    {"baseline": "844-867", "candidate": "866-891", "kind": "C1 eta-min and C2 eta-max endpoint mappings"},
+    {"baseline": "955-969", "candidate": "989-997", "kind": "two-member bounds validation and loop"},
+    {"baseline": "1035", "candidate": "1067", "kind": "two-chunk counter guard"}
+  ],
+  "reproducible_application": {
+    "temporary_tree": "/tmp/specfem-two-chunk-patch-0Y64i1",
+    "patch_byte_identical_to_nested_git_diff": true,
+    "git_apply_check_current_head": "pass",
+    "apply": "pass",
+    "applied_file_byte_identical_to_formal_candidate": true,
+    "applied_target_sha256": "8c64f1d1d415ec6c0792f06474dafcffcc698da6ee03ecd21bfd4fdc90b64857",
+    "reverse_dry_run": "pass",
+    "patch_scope_single_fortran_file": true,
+    "debug_changes_present": false,
+    "build_rule_changes_present": false,
+    "generated_or_result_changes_present": false,
+    "verification_commands": [
+      "git archive HEAD src/meshfem3D/create_chunk_buffers.f90 | tar -x -C <temporary-tree>",
+      "git -C <temporary-tree> apply --check <patch>",
+      "git -C <temporary-tree> apply <patch>",
+      "sha256sum <temporary-tree>/src/meshfem3D/create_chunk_buffers.f90",
+      "git -C <temporary-tree> apply --reverse --check <patch>"
+    ],
+    "verification_stdout": "forward check, apply, byte comparison, SHA comparison, and reverse dry-run all passed",
+    "verification_stderr": "empty for current-HEAD temporary-tree verification"
+  },
+  "applicability": {
+    "validated_for_current_source": {
+      "revision": "9c312cb2c991b47484a7f302775f4f01ed9470f8",
+      "target_sha256": "fd4137713e55e14ec664a9d55487b64c2b9bf73499c1f82780f1f5a6e63b088f",
+      "clean_apply": true,
+      "runtime_validated": true
+    },
+    "nearby_identical_context_revisions": [
+      "0761f9f57f9c0e0f0b0573272aed5ce89ef1d29a",
+      "df8bdcdcff2e1400187b33faefb5b4e00eab2f42",
+      "3981be7a1096c8b374f6d215062263259968ff57",
+      "a5b96ef3a09eb59bc8d2e80418959fd03681705b",
+      "4f40a57a4b441a76f12ac716699435a558dd4baa"
+    ],
+    "patch_context_compatible": true,
+    "nearby_runtime_validated": false,
+    "clean_v8_0_0": {
+      "applicability": "not_cleanly_applicable",
+      "observed_failed_hunks": "6/10",
+      "backport_created": false
+    },
+    "other_versions": "not_tested"
+  },
+  "validated_configuration": {
+    "canonical_90deg_fixture_ready": true,
+    "general_two_chunk_mode_classification": "B",
+    "nchunks": 2,
+    "chunk_geometry": "two adjacent 90-degree cubed-sphere chunks; first is central and second is attached on the supported left side",
+    "orientation": "central coordinates plus GAMMA_ROTATION_AZIMUTH",
+    "validated_mpi_ranks": [2, 8, 12]
+  },
+  "unsupported_or_unverified": [
+    "non-90-degree chunk widths",
+    "different widths for the two chunks",
+    "other attachment sides",
+    "nonadjacent chunks",
+    "independently oriented chunks",
+    "arbitrary two-chunk topology",
+    "three-chunk configurations",
+    "general multi-chunk configurations"
+  ],
+  "validation": {
+    "toolchain": {
+      "fortran": "/usr/bin/gfortran with FCFLAGS=-O3 -g",
+      "mpi_fortran": "/usr/bin/mpif90",
+      "mpi_runtime": "Open MPI 4.1.4"
+    },
+    "claims": [
+      {
+        "claim": "clean v8.0.0 and current reversed reproduce the historical C1 omission and C2 three-member/rank-zero path",
+        "evidence": "results/two_chunk_causal_waveform_acceptance_20260716T124432Z/14_reports/summary.md"
+      },
+      {
+        "claim": "patched C1/C2 reciprocal two-member paths pass at shallow, mid-mantle, and CMB-near groups; 2x2 and 2x3 ownership checks pass; no internal AB--AC Stacey face",
+        "evidence": "docs/two_chunk_corner_topology_acceptance.md"
+      },
+      {
+        "claim": "2/8/12 physical mesh fingerprints are identical and C1/C2 waveform symmetry plus decomposition invariance pass",
+        "evidence": "results/two_chunk_waveform_symmetry_closure_20260716T144230Z/07_reports/acceptance_matrix.json"
+      },
+      {
+        "claim": "v3 maximum NRMS is 2.92e-6, maximum relative energy difference is 2.86e-6, with no shift, NaN/Inf, or endpoint anomaly",
+        "evidence": "results/two_chunk_waveform_symmetry_closure_20260716T144230Z/05_analysis/v3_compact_8rank_waveform_metrics.json"
+      },
+      {
+        "claim": "fresh one-chunk and rerun six-chunk regressions pass",
+        "evidence": "results/two_chunk_waveform_symmetry_closure_20260716T144230Z/05_analysis/one_chunk_clean_vs_patched.json and results/two_chunk_waveform_symmetry_closure_20260716T144230Z/05_analysis/six_chunk_baseline_vs_patched.json"
+      },
+      {
+        "claim": "earlier v2 [0,25] s comparison ended before the approximately 52 s first physical arrival and is an invalid comparison window",
+        "evidence": "results/two_chunk_waveform_symmetry_closure_20260716T144230Z/01_v2_audit/v2_diagnostic_breakdown.json"
+      }
+    ]
+  },
+  "package_files": [
+    "patches/specfem3d_globe/two_chunk_endpoints/specfem3d_globe_two_chunk_endpoints.patch",
+    "patches/specfem3d_globe/two_chunk_endpoints/specfem3d_globe_two_chunk_endpoints_manifest.json",
+    "patches/specfem3d_globe/two_chunk_endpoints/README.md",
+    "patches/specfem3d_globe/two_chunk_endpoints/verify_patch.sh",
+    "docs/two_chunk_project_patch.md"
+  ],
+  "excluded_categories": [
+    "large result trees",
+    "executables and objects",
+    "temporary isolated source and build trees",
+    "diagnostic-only DEBUG source",
+    "fixtures",
+    "generated waveform and database files",
+    "formal build rules"
+  ],
+  "repository_status": {
+    "root_initial": "not a Git repository at this path; Git discovery stopped at /import",
+    "root_final": "not a Git repository at this path; Git discovery stopped at /import",
+    "nested_initial": [
+      "M src/auxiliaries/rules.mk",
+      "M src/meshfem3D/create_chunk_buffers.f90",
+      "M src/meshfem3D/model_s40rts.f90",
+      "M tests/meshfem3D/test_models.makefile",
+      "?? DATA/ulvz_s40rts.par.example",
+      "?? src/auxiliaries/ulvz_model_extract.f90",
+      "?? tests/meshfem3D/5.test_s40rts_ulvz.sh",
+      "?? tests/meshfem3D/6.test_s40rts_ulvz_mesh.sh",
+      "?? tests/meshfem3D/inspect_s40rts_ulvz_database.f90",
+      "?? tests/meshfem3D/results.log",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_fixture/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_115002_1960459/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155014_2201348/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_161556_177882/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_165805_185535/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260703_102747_261318/",
+      "?? tests/meshfem3D/test_s40rts_ulvz.f90",
+      "?? utils/BuildBot/__pycache__/"
+    ],
+    "nested_final": [
+      "M src/auxiliaries/rules.mk",
+      "M src/meshfem3D/create_chunk_buffers.f90",
+      "M src/meshfem3D/model_s40rts.f90",
+      "M tests/meshfem3D/test_models.makefile",
+      "?? DATA/ulvz_s40rts.par.example",
+      "?? src/auxiliaries/ulvz_model_extract.f90",
+      "?? tests/meshfem3D/5.test_s40rts_ulvz.sh",
+      "?? tests/meshfem3D/6.test_s40rts_ulvz_mesh.sh",
+      "?? tests/meshfem3D/inspect_s40rts_ulvz_database.f90",
+      "?? tests/meshfem3D/results.log",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_fixture/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_115002_1960459/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155014_2201348/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260630_155814_2228829/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_161556_177882/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_165805_185535/",
+      "?? tests/meshfem3D/s40rts_ulvz_mesh_work_20260703_102747_261318/",
+      "?? tests/meshfem3D/test_s40rts_ulvz.f90",
+      "?? utils/BuildBot/__pycache__/"
+    ],
+    "nested_status_preserved": true
+  },
+  "formal_build_rules_modified": false,
+  "formal_source_modified_by_this_task": false,
+  "commit_performed": false,
+  "push_performed": false
+}

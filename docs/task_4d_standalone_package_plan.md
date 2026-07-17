@@ -532,10 +532,10 @@ Task 4D implementation must add or preserve tests for:
 Suggested verification commands for implementation:
 
 ```bash
-/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python \
+${ULVZ_PYTHON:-python3} \
   -m pytest tests/ulvz_model_postprocess -q
 
-/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python \
+${ULVZ_PYTHON:-python3} \
   -m pytest tests/ulvz_mesh_viz -q
 ```
 

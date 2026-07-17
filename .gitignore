@@ -12,6 +12,7 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+.mpl/
 build/
 dist/
 *.egg-info/
@@ -43,12 +44,16 @@ specfem3d_globe/OUTPUT_FILES/*
 specfem3d_globe/tests/meshfem3D/results.log
 specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_*/
 
-# Task 4C acceptance products: keep only small provenance reports
+# Task 4C acceptance products are retained locally; project status documents
+# their public conclusions without exposing machine-specific runtime paths.
 task_4c_acceptance_artifacts/**
-!task_4c_acceptance_artifacts/
-!task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_*/
-!task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_*/task_4c_real_fixture_acceptance.json
-!task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_*/task_4c_real_fixture_acceptance.txt
 
 # Local scratch notes
 note
+
+# Large local simulation and planner-validation evidence is retained locally.
+results/
++results/
+specfem3d_globe/tests/**/obj/
+specfem3d_globe/tests/**/bin/
+packages/two_chunk_planner/validation/**/output/

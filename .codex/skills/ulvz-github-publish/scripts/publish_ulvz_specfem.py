@@ -8,8 +8,9 @@ import sys
 from pathlib import Path
 
 
-DEFAULT_WORKING_DIR = Path("/import/freenas-m-01-seismology/xjiang/ulvz_specfem")
-DEFAULT_PUBLISH_DIR = Path("/import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish")
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
+DEFAULT_WORKING_DIR = PROJECT_ROOT
+DEFAULT_PUBLISH_DIR = PROJECT_ROOT.with_name(f"{PROJECT_ROOT.name}_publish")
 EXPECTED_REMOTE = "git@github.com:ordeal97/ulvz_specfem.git"
 EXPECTED_BRANCH = "main"
 MAX_FILE_BYTES = 90 * 1024 * 1024
@@ -22,6 +23,7 @@ RSYNC_FILTERS = [
     "--include=/.codex/skills/**",
     "--exclude=/.codex/**",
     "--exclude=.pytest_cache",
+    "--exclude=.mpl",
     "--exclude=__pycache__",
     "--exclude=*.py[cod]",
     "--exclude=.conda",
@@ -37,17 +39,22 @@ RSYNC_FILTERS = [
     "--exclude=*token*",
     "--exclude=*password*",
     "--exclude=/note",
+    "--exclude=/results",
+    "--exclude=/+results",
     "--exclude=/specfem3d_globe/obj",
     "--exclude=/specfem3d_globe/bin",
     "--exclude=/specfem3d_globe/DATABASES_MPI",
     "--exclude=/specfem3d_globe/OUTPUT_FILES",
+    "--exclude=/specfem3d_globe/tests/**/obj",
+    "--exclude=/specfem3d_globe/tests/**/bin",
     "--exclude=/specfem3d_globe/tests/meshfem3D/results.log",
     "--exclude=/specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_*",
-    "--include=/task_4c_acceptance_artifacts/",
-    "--include=/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_*/",
-    "--include=/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_*/task_4c_real_fixture_acceptance.json",
-    "--include=/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_*/task_4c_real_fixture_acceptance.txt",
-    "--exclude=/task_4c_acceptance_artifacts/**",
+    "--include=/packages/two_chunk_planner/validation/",
+    "--include=/packages/two_chunk_planner/validation/user_guide_acceptance_20260717T093847Z/",
+    "--include=/packages/two_chunk_planner/validation/user_guide_acceptance_20260717T093847Z/summary.json",
+    "--include=/packages/two_chunk_planner/validation/user_guide_acceptance_20260717T093847Z/report.md",
+    "--exclude=/packages/two_chunk_planner/validation/**",
+    "--exclude=/task_4c_acceptance_artifacts",
 ]
 
 

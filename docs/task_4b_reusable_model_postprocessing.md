@@ -186,14 +186,14 @@ tests/ulvz_model_postprocess/
 Use:
 
 ```bash
-/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python \
+${ULVZ_PYTHON:-python3} \
   -m pytest tests/ulvz_model_postprocess -q
 ```
 
 Task 3E/3F non-regression:
 
 ```bash
-/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python \
+${ULVZ_PYTHON:-python3} \
   -m pytest tests/ulvz_mesh_viz -q
 ```
 

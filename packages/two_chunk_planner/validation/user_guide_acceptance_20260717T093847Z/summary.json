@@ -1,0 +1,28 @@
+{
+  "schema": "two_chunk_planner_user_guide_acceptance.v1",
+  "package_local_only": true,
+  "examples_are_only_test_fixture_source": true,
+  "root_docs_cases_results_modified": false,
+  "pytest": {"passed": 13, "failed": 0, "skipped": 0},
+  "smokes": {
+    "geometry_only": {"success_exit_code": 0, "overwrite_exit_code": 2},
+    "phase_aware_pdiff_sdiff": {"success_exit_code": 0, "overwrite_exit_code": 2},
+    "station_csv": {"success_exit_code": 0, "overwrite_exit_code": 2},
+    "target_circle": {"success_exit_code": 0, "overwrite_exit_code": 2},
+    "target_polygon": {"success_exit_code": 0, "overwrite_exit_code": 2},
+    "target_corridor": {"success_exit_code": 0, "overwrite_exit_code": 2}
+  },
+  "standard_output_files_verified": true,
+  "internal_links_verified": true,
+  "bilingual_numbered_sections_verified": true,
+  "phase_aware_pdiff_sdiff_smoke_passed": true,
+  "sampling_stability_status": "indeterminate",
+  "boundary_time_production_safe": false,
+  "canonical_planner_v1_classification": "canonical_geometry_planning_validated__waveform_and_boundary_production_validation_required",
+  "formal_source_modified": false,
+  "formal_build_rules_modified": false,
+  "accepted_patch_modified": false,
+  "large_simulation_run": false,
+  "commit_performed": false,
+  "push_performed": false
+}

@@ -1,0 +1,6 @@
+name: hawaii_ulvz_example
+type: circle
+center:
+  latitude_deg: 19.6
+  longitude_deg: -155.5
+radius_km: 512.0

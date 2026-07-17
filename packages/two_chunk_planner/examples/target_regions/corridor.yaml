@@ -1,0 +1,10 @@
+name: interface_crossing_corridor
+type: corridor
+centerline:
+  - name: AB
+    latitude_deg: 0.0
+    longitude_deg: -15.0
+  - name: AC
+    latitude_deg: 0.0
+    longitude_deg: -90.0
+half_width_km: 50.0

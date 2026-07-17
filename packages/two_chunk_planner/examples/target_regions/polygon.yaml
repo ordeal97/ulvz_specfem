@@ -1,0 +1,12 @@
+name: interior_polygon
+type: polygon
+vertices:
+  - name: northwest
+    latitude_deg: 10.0
+    longitude_deg: -25.0
+  - name: northeast
+    latitude_deg: 10.0
+    longitude_deg: -10.0
+  - name: south
+    latitude_deg: -10.0
+    longitude_deg: -17.5

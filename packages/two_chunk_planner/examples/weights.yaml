@@ -1,0 +1,4 @@
+coverage: 0.35
+external_margin: 0.30
+endpoint_margin: 0.20
+cost: 0.15

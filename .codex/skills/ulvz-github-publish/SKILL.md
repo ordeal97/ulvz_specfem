@@ -7,9 +7,8 @@ description: Publish this ULVZ SPECFEM project to GitHub using its dedicated cle
 
 ## Overview
 
-Use this skill to publish `/import/freenas-m-01-seismology/xjiang/ulvz_specfem`
-to GitHub through the clean publishing copy
-`/import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish`.
+Set `PROJECT_ROOT` to the ULVZ working tree and `PUBLISH_REPO` to its dedicated
+clean publishing copy, then use this skill to publish from `PUBLISH_REPO`.
 
 Do not publish from `specfem3d_globe`; that nested repository tracks upstream
 SPECFEM and is not the GitHub publishing repository for this project.
@@ -38,7 +37,7 @@ main
    use the project Python interpreter:
 
    ```bash
-   /import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python \
+   "${ULVZ_PYTHON:-python3}" \
      -m pytest tests/ulvz_mesh_viz/test_ulvz_mesh_viz.py -q
    ```
 
@@ -63,9 +62,9 @@ main
 4. Verify the final output:
 
    ```bash
-   git -C /import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish status --short
-   git -C /import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish status -sb
-   git -C /import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish log -1 --oneline
+   git -C "$PUBLISH_REPO" status --short
+   git -C "$PUBLISH_REPO" status -sb
+   git -C "$PUBLISH_REPO" log -1 --oneline
    ```
 
 ## Safety Rules

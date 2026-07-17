@@ -5,20 +5,17 @@ the GitHub repository after future local changes.
 
 ## Repository Layout
 
-The working project directory is:
+Set portable locations before running the workflow:
 
 ```bash
-/import/freenas-m-01-seismology/xjiang/ulvz_specfem
+export PROJECT_ROOT=/path/to/ulvz_specfem
+export PUBLISH_REPO=/path/to/ulvz_specfem_publish
 ```
 
 This directory is used for development, testing, SPECFEM builds, and simulation
 work. It is not itself the GitHub publishing repository.
 
-The long-lived publishing copy is:
-
-```bash
-/import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish
-```
+The long-lived publishing copy is `$PUBLISH_REPO`.
 
 This publishing copy is a clean Git repository used only for commits and pushes
 to GitHub. Keeping it separate avoids accidentally committing nested Git
@@ -57,6 +54,7 @@ rsync -a \
   --include=/.codex/skills/** \
   --exclude=/.codex/** \
   --exclude=.pytest_cache \
+  --exclude=.mpl \
   --exclude=__pycache__ \
   --exclude='*.py[cod]' \
   --exclude=.conda \
@@ -72,25 +70,30 @@ rsync -a \
   --exclude='*token*' \
   --exclude='*password*' \
   --exclude=/note \
+  --exclude=/results \
+  --exclude=/+results \
   --exclude=/specfem3d_globe/obj \
   --exclude=/specfem3d_globe/bin \
   --exclude=/specfem3d_globe/DATABASES_MPI \
   --exclude=/specfem3d_globe/OUTPUT_FILES \
+  --exclude='/specfem3d_globe/tests/**/obj' \
+  --exclude='/specfem3d_globe/tests/**/bin' \
   --exclude=/specfem3d_globe/tests/meshfem3D/results.log \
   --exclude=/specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_* \
-  --include=/task_4c_acceptance_artifacts/ \
-  --include=/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_*/ \
-  --include=/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_*/task_4c_real_fixture_acceptance.json \
-  --include=/task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_*/task_4c_real_fixture_acceptance.txt \
-  --exclude=/task_4c_acceptance_artifacts/** \
-  /import/freenas-m-01-seismology/xjiang/ulvz_specfem/ \
-  /import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish/
+  --include=/packages/two_chunk_planner/validation/ \
+  --include=/packages/two_chunk_planner/validation/user_guide_acceptance_20260717T093847Z/ \
+  --include=/packages/two_chunk_planner/validation/user_guide_acceptance_20260717T093847Z/summary.json \
+  --include=/packages/two_chunk_planner/validation/user_guide_acceptance_20260717T093847Z/report.md \
+  --exclude=/packages/two_chunk_planner/validation/** \
+  --exclude=/task_4c_acceptance_artifacts \
+  "$PROJECT_ROOT/" \
+  "$PUBLISH_REPO/"
 ```
 
 Then commit and push from the publishing copy:
 
 ```bash
-cd /import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish
+cd "$PUBLISH_REPO"
 git status
 git add .
 git commit -m "Update project"
@@ -132,11 +135,15 @@ The synchronization command excludes:
   excluded as local agent/tooling metadata.
 - `.pytest_cache`, `__pycache__`, and `*.py[cod]`: Python test and bytecode
   caches.
+- `.mpl`: local Matplotlib cache.
 - `.conda`, `.venv`, `venv`, `env`, and `conda-env`: local Python or Conda
   environments.
 - `.env`, `.env.*`, `*.pem`, `*.key`, and names containing `secret`, `token`,
   or `password`: local secrets and credentials.
 - `note`: local scratch notes.
+- `results`: local simulation evidence, including large databases and waveform
+  products. Summaries remain in project documentation and manifests.
+- `+results`: a local legacy results directory retained outside GitHub.
 - `specfem3d_globe/obj`: SPECFEM object/build files.
 - `specfem3d_globe/bin`: SPECFEM compiled executables.
 - `specfem3d_globe/DATABASES_MPI` and `specfem3d_globe/OUTPUT_FILES`:
@@ -144,17 +151,21 @@ The synchronization command excludes:
 - `specfem3d_globe/tests/meshfem3D/results.log`: generated test output.
 - `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_*`: preserved local
   validation work directories and mesher artifacts.
-- `task_4c_acceptance_artifacts/**`: bulky reusable-postprocessing acceptance
-  arrays, VTK files, PNGs, caches, and intermediate rank stores. Only small
-  `task_4c_real_fixture_acceptance.json` and
-  `task_4c_real_fixture_acceptance.txt` provenance reports are included.
+- nested SPECFEM test `obj` and `bin` directories: generated test objects and
+  executables.
+- `packages/two_chunk_planner/validation/**`: full local smoke outputs and
+  logs. Only the compact published acceptance `summary.json` and `report.md`
+  are synchronized.
+- `task_4c_acceptance_artifacts`: reusable-postprocessing runtime evidence,
+  including machine-specific database paths and generated arrays. It remains
+  locally preserved; the public status documentation records its conclusions.
 
 Before pushing large updates, it is useful to check for files that GitHub may
 reject:
 
 ```bash
-find /import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish \
-  -path /import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish/.git -prune \
+find "$PUBLISH_REPO" \
+  -path "$PUBLISH_REPO/.git" -prune \
   -o -type f -size +90M -print
 ```
 
@@ -182,5 +193,5 @@ first import. They are no longer part of the workflow.
 Future updates should use the long-lived publishing copy:
 
 ```bash
-/import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish
+$PUBLISH_REPO
 ```

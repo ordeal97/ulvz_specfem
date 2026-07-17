@@ -160,7 +160,7 @@ The working directory is not the GitHub publishing repository. Publication is
 done through the clean copy documented in `docs/github_publish_workflow.md`:
 
 ```text
-/import/freenas-m-01-seismology/xjiang/ulvz_specfem_publish
+$PROJECT_ROOT/../ulvz_specfem_publish
 ```
 
 Do not publish SPECFEM build outputs, simulation databases, preserved work

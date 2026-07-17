@@ -18,7 +18,7 @@ PACKAGE_SRC = PACKAGE_ROOT / "src"
 TASK4_EXTRACTOR = REPO / "specfem3d_globe" / "bin" / "xulvz_model_extract"
 PYTHON = os.environ.get(
     "ULVZ_TEST_PYTHON",
-    "/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python",
+    sys.executable,
 )
 if not Path(PYTHON).exists():
     PYTHON = sys.executable
