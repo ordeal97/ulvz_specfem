@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Small standalone planner fixture; not a complete production SPECFEM Par_file.
+NEX_XI = 96
+NEX_ETA = 96
+NPROC_XI = 2
+NPROC_ETA = 2
+ELLIPTICITY = .false.
+SUPPRESS_CRUSTAL_MESH = .false.
+ADD_4TH_DOUBLING = .false.

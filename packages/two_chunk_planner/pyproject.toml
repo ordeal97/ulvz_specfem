@@ -4,18 +4,28 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "two-chunk-planner"
-version = "0.1.0"
-description = "Canonical ULVZ two-chunk SPECFEM3D_GLOBE planning and audit tool"
+version = "0.2.0"
+description = "Standalone planner for the ULVZ canonical two-chunk SPECFEM3D_GLOBE geometry"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent"
+]
 dependencies = ["numpy", "matplotlib", "PyYAML"]
 
 [project.optional-dependencies]
-phase = ["obspy"]
+phase-aware = ["obspy"]
 test = ["pytest"]
+docs = []
 
 [project.scripts]
 two-chunk-planner = "two_chunk_planner.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+two_chunk_planner = ["resources/*.json"]

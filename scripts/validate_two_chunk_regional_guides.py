@@ -47,6 +47,8 @@ def main() -> int:
     zh_path = root / "docs/two_chunk_regional_simulations_guide_zh.md"
     index_path = root / "docs/two_chunk_regional_simulations_guide.md"
     manifest_path = root / "patches/specfem3d_globe/two_chunk_endpoints/specfem3d_globe_two_chunk_endpoints_manifest.json"
+    parameter_source = root / "specfem3d_globe/src/shared/read_compute_parameters.f90"
+    absorb_source = root / "specfem3d_globe/src/meshfem3D/get_absorb.f90"
     errors: list[str] = []
     try:
         en, zh, index = read(en_path), read(zh_path), read(index_path)
@@ -75,6 +77,42 @@ def main() -> int:
     for token in ("canonical_90deg_fixture_ready=true", "general_two_chunk_mode_classification=B"):
         if token not in en or token not in zh or token not in index:
             errors.append(f"scope token missing: {token}")
+    implementation_pairs = (
+        ("counter-clockwise", "逆时针"),
+        ("ABSORBING_CONDITIONS=.true.", "ABSORBING_CONDITIONS=.true."),
+        ("ABSORB_USING_GLOBAL_SPONGE=.false.", "ABSORB_USING_GLOBAL_SPONGE=.false."),
+        ("never sponge, Stacey", "永远不是 sponge、Stacey"),
+        ("two_chunk_canonical_geometry.svg", "two_chunk_canonical_geometry.svg"),
+        ("two_chunk_user_workflow.svg", "two_chunk_user_workflow.svg"),
+        ("There is no AC latitude, longitude, or gamma parameter", "AC 没有独立的 latitude、longitude 或 gamma 参数"),
+        ("fixed-geometry planner check", "固定几何的 planner 检查"),
+        ("fixed teaching `DATA/` only", "仅 fixed teaching `DATA/`"),
+    )
+    for english, chinese in implementation_pairs:
+        if english not in en or chinese not in zh:
+            errors.append(f"missing bilingual implementation statement: {english}")
+    for asset in (
+        root / "docs/assets/two_chunk_canonical_geometry.svg",
+        root / "docs/assets/two_chunk_user_workflow.svg",
+        root / "docs/two_chunk_absorbing_boundary_audit.md",
+    ):
+        if not asset.is_file():
+            errors.append(f"missing required guide asset: {asset.relative_to(root)}")
+    try:
+        parameter_text = read(parameter_source)
+        absorb_text = read(absorb_source)
+    except ValueError as exc:
+        errors.append(f"cannot audit current absorbing-boundary source: {exc}")
+    else:
+        source_requirements = (
+            (parameter_text, "ABSORB_USING_GLOBAL_SPONGE .and. NCHUNKS /= 6"),
+            (parameter_text, "Please set NCHUNKS to 6 in Par_file to use ABSORB_USING_GLOBAL_SPONGE"),
+            (absorb_text, "ichunk == CHUNK_AC"),
+            (absorb_text, "ichunk == CHUNK_AB"),
+        )
+        for source_text, token in source_requirements:
+            if token not in source_text:
+                errors.append(f"current-source absorbing-boundary invariant missing: {token}")
     safety_pairs = (
         ("Stop on a hash or context mismatch", "hash 或 context 不匹配时必须停止"),
         ("Do not prescribe a fixed angular safety distance", "不能规定固定 angular safety distance"),

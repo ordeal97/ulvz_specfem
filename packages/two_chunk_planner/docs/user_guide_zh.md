@@ -1,179 +1,135 @@
-# Canonical 双 chunk planner 使用指南
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+# 双 chunk planner 使用指南
 
-## 1. 用途与适用范围
+版本 0.2.0。`two_chunk_planner` 是完全独立、只读的 canonical two-chunk 规划工具。
+安装后可从任意目录运行，不需要 ULVZ 项目、SPECFEM 工作树或 patch manifest。
 
-`two_chunk_planner` 是本 ULVZ 项目已接受 canonical 区域几何的运行前、只读规划与
-审计工具。它搜索 central latitude/longitude 与 `GAMMA_ROTATION_AZIMUTH`，分类震源
-和台站，审计路径/目标覆盖，并生成供人工审阅的 Par_file 片段。它不运行、也不能替代
-SPECFEM mesher、database、solver、Stacey、分解、波形或生产级边界返回验收。
+## 1. 范围与限制
 
-它仅支持 `NCHUNKS=2`、90°×90° chunk、AB 为 central first chunk、AC 为
-supported-left second chunk，以及全系统唯一的中心和方向。不支持非 90°或矩形 chunk、
-其他 attachment side、非相邻 chunk、独立定向、任意 two-chunk topology 或
-three-/multi-chunk 模式。见[几何图](figures/canonical_two_chunk_geometry.svg)。
+它只规划 `NCHUNKS=2` 的 canonical 90°×90° 几何：AB 是 central first chunk，AC 是
+supported-left second chunk。不支持其他角宽、attachment side、独立定向、任意 two-chunk
+或 multi-chunk topology。`general_two_chunk_mode_classification=B`。
 
-## 2. 环境与安装
+工具搜索 center latitude/longitude 与 `GAMMA_ROTATION_AZIMUTH`，分类 source/receiver，
+审计路径并输出可审阅参数片段。它不运行、也不替代 topology、mesher、database、Stacey、
+solver、waveform 或生产级 boundary-return 验收。
 
-基础依赖为 Python >=3.11、NumPy、Matplotlib、PyYAML；phase-aware 还需要 ObsPy，
-而 geographic TauP path 需要 ObsPy 可使用 geographiclib。本项目使用：
+## 2. 安装与启动
+
+从任意目录安装提供的 wheel：
 
 ```bash
-PY=${ULVZ_PYTHON:-python3}
-PYTHONPATH=packages/two_chunk_planner/src "$PY" -m two_chunk_planner --help
-PYTHONPATH=packages/two_chunk_planner/src "$PY" - <<'PY'
-from obspy.geodetics.base import HAS_GEOGRAPHICLIB
-print(HAS_GEOGRAPHICLIB)
-PY
+python -m pip install two_chunk_planner-0.2.0-py3-none-any.whl
 ```
 
-可选 editable install：
+从 source distribution 或 source directory 安装：
 
 ```bash
-"$PY" -m pip install -e packages/two_chunk_planner
-"$PY" -m pip install -e 'packages/two_chunk_planner[phase]'
+python -m pip install two_chunk_planner-0.2.0.tar.gz
+python -m pip install .
+python -m pip install -e '.[phase-aware]'
 ```
 
-第二条命令声明 ObsPy phase extra；应检查 `HAS_GEOGRAPHICLIB`，不能假定
-geographiclib 已可用。安装不等于应用 patch。若从项目 checkout 外部安装，必须显式
-给出 `--project-root` 与 `--specfem-root`，因为 hash 校验需要 project patch manifest
-和 SPECFEM target source。缺少 ObsPy 会报
-`phase-aware mode requires optional dependency obspy`；缺少 geographic position 时会
-成为缺失 phase-path，不会自动替代路径。
-
-## 3. 快速开始
-
-在仓库根目录运行，所有 `--output` 路径必须尚不存在。
+可选 `phase-aware` extra 提供 ObsPy。应检查 geographic TauP 支持：
 
 ```bash
-P=packages/two_chunk_planner
-PY=${ULVZ_PYTHON:-python3}
-PYTHONPATH=$P/src "$PY" -m two_chunk_planner plan \
-  --cmtsolution $P/examples/geometry_only/DATA/CMTSOLUTION \
-  --stations $P/examples/geometry_only/DATA/STATIONS \
+python -c 'from obspy.geodetics.base import HAS_GEOGRAPHICLIB; print(HAS_GEOGRAPHICLIB)'
+two-chunk-planner --help
+python -m two_chunk_planner --help
+```
+
+仅开发 package 时可不安装运行：
+
+```bash
+PYTHONPATH=src python -m two_chunk_planner --help
+```
+
+## 3. 三个独立案例
+
+以下 fixture 都是 synthetic，不是 Kim/Song 输入。令 `P` 为 package examples 的副本；
+每个 output 目录必须不存在。
+
+```bash
+P=/path/to/two_chunk_planner/examples
+two-chunk-planner plan --cmtsolution "$P/geometry_only/DATA/CMTSOLUTION" \
+  --stations "$P/geometry_only/DATA/STATIONS" --analysis-window 0 1900 \
+  --latitude-range 0,0 --longitude-range 0,0 --gamma-range 0,0 --output geometry_plan
+```
+
+```bash
+two-chunk-planner plan --cmtsolution "$P/phase_aware/DATA/CMTSOLUTION" \
+  --stations "$P/phase_aware/DATA/STATIONS" --path-mode phase-aware \
+  --phases Pdiff,Sdiff --taup-model prem --taup-resample --analysis-window 0 1900 \
+  --latitude-range 0,0 --longitude-range 0,0 --gamma-range 0,0 --output phase_plan
+```
+
+```bash
+two-chunk-planner plan --cmtsolution "$P/geometry_only/DATA/CMTSOLUTION" \
+  --stations "$P/geometry_only/DATA/STATIONS" --par-file "$P/external_par_file/Par_file" \
   --analysis-window 0 1900 --latitude-range 0,0 --longitude-range 0,0 --gamma-range 0,0 \
-  --output $P/validation/manual_geometry_<UTC>
+  --output external_par_plan
 ```
 
-phase-aware Pdiff/Sdiff 使用：
-
-```bash
-PYTHONPATH=$P/src "$PY" -m two_chunk_planner plan \
-  --cmtsolution $P/examples/phase_aware/DATA/CMTSOLUTION --stations $P/examples/phase_aware/DATA/STATIONS \
-  --path-mode phase-aware --phases Pdiff,Sdiff --taup-model prem --taup-resample \
-  --analysis-window 0 1900 --latitude-range 0,0 --longitude-range 0,0 --gamma-range 0,0 \
-  --output $P/validation/manual_phase_<UTC>
-```
-
-CSV 台站示例使用：
-
-```bash
-PYTHONPATH=$P/src "$PY" -m two_chunk_planner plan --source 0 0 50 \
-  --stations-csv $P/examples/station_csv/stations.csv --analysis-window 0 1900 \
-  --latitude-range 0,0 --longitude-range 0,0 --gamma-range 0,0 \
-  --output $P/validation/manual_csv_<UTC>
-```
-
-其中固定 `0,0` center/gamma 仅用于确定性快速示例，不能理解为一般推荐。
-
-## 4. 输入与校验
+## 4. 输入与 profile
 
 必须二选一：`--cmtsolution` 或 `--source LAT LON DEPTH_KM`；也必须二选一：
-`--stations` 或 `--stations-csv`。CMTSOLUTION 要有 PDE header 和 12 条 labelled
-record，并校验非零矩张量、有限经纬度和非负深度。STATIONS 每行六个空白字段：
-station、network、latitude、longitude、elevation、burial。CSV 必须有
-`network,station,latitude_deg,longitude_deg`；`elevation_m`、`burial_m` 可选。重复
-network/station 和非法数值会被拒绝。
+`--stations` 或 `--stations-csv`。source、station、target YAML 都可在任意可读路径。
+circle/polygon/corridor target 为可选。
 
-工具读取 `--par-file`，否则读取 `--specfem-root` 下的 `DATA/Par_file`；它使用
-`ELLIPTICITY`、`SUPPRESS_CRUSTAL_MESH`、`ADD_4TH_DOUBLING` 进行几何或 NEX 兼容性
-判断，但不会修改该文件。一次运行必须给出 phases、analysis window 或
-`--target-energy-end-s` 之一。
+`--par-file` 是唯一可选外部配置上下文，可在任意路径；它只读取 NEX/NPROC 和相关
+compatibility flag，不通过 SPECFEM 定位，也不会修改文件。省略时，planning defaults 来自
+`src/two_chunk_planner/resources/canonical_profile_v1.json`：NEX=96、canonical geometry
+与 provenance reference。这些是规划默认值，不是用户生产配置。profile 不访问用户的
+SPECFEM tree、patch manifest 或 source hash。
 
-`--target-region` 为严格 YAML。package 示例包括：circle（`name`、`type: circle`、
-`center.latitude_deg`、`center.longitude_deg`、`radius_km`）；polygon（`name`、
-`type: polygon`、至少三个有名 vertices）；corridor（`name`、`type: corridor`、至少
-两个有名 centerline point、正 `half_width_km`）。未知或缺失 YAML field 均为错误。
-`--weights` 是独立严格 mapping，仅允许 `coverage`、`external_margin`、
-`endpoint_margin`、`cost`；不存在 YAML/CLI 优先级合并。source 与 station 的两种
-输入形式均为互斥，而非合并。
+[英文 CLI reference](cli_reference_en.md) 与 [中文 CLI 参考](cli_reference_zh.md) 是
+完整、权威的 35 项 option 列表。TauP、target、search、scoring、NEX/MPI 与 output 细节
+应查 reference；本指南只解释常用工作流。
 
-## 5. 路径模式与 phase coverage
+## 5. 路径模式与规划
 
-`geometry-only`（默认）采样地表 source-station 大圆；其 `--phases` 文本不生成
-phase path。`phase-aware` 对每个 phase×station 独立调用
-`TauPyModel.get_ray_paths_geo()`。每条记录包含 requested/returned phase、到时、TauP
-model、`resample`、ray-parameter tolerance、地理样本数、最大采样深度和由 Cartesian
-弦长累加的 `raypath_length_km`，其状态固定为
-`taup_raypath_polyline_estimate`。
+`geometry-only` 默认使用采样地表大圆。`phase-aware` 对每个请求的 phase×station 调用
+TauP；Pdiff/Sdiff geographic path 已验证。默认 strict coverage；partial 必须显式给
+`--allow-partial-phase-coverage`，且绝不替换 phase。TauP 长度为
+`taup_raypath_polyline_estimate`，CMB-near 是 sampled proxy；TauP 禁止用于
+boundary-return timing。
 
-CMB-near 字段是最大采样深度附近的 proxy，使用可配置
-`--cmb-near-depth-tolerance-km`（默认 25 km）；它不是物理 CMB 交点。全部 TauP
-record 都带 `boundary_time_use=forbidden`。
+搜索是确定性的 coarse/local/final center-gamma refinement。candidate geometry 始终
+canonical；target coverage、external margin 和 endpoint margin 是透明检查。NEX=96、总
+ranks 2/8/12 标为 `project_validated`；其他兼容选项未获项目验证。
 
-默认 strict：任一请求的 phase×station 缺失后，工具列出全部缺失 pair 并拒绝整个
-请求。加 `--allow-partial-phase-coverage` 后，保留可用的原请求 phase，并在
-`candidates.json`、`geometry_audit.json`、`report.md` 写入 requested/provided/missing
-的 `phase_inventory` 和“不替代 phase”警告。
+## 6. 输出与验证边界
 
-## 6. center/gamma 搜索与 canonical 几何
+每次成功运行写出 `candidates.json`、`candidates.csv`、`geometry_audit.json`、
+`boundary_time_audit.json`、`report.md`、`map.png`、`run_manifest.json` 与
+`recommended_Par_file.inc`。
 
-工具执行确定性 coarse grid、local refinement、final refinement。默认
-latitude/longitude/gamma coarse step 为 10°/10°/15°，local 为 2°/2°/3°，final 为
-0.5°/0.5°/0.5°；默认范围为 latitude −90..90、longitude −180..180、gamma 0..360。
-极点表示会 canonicalize，避免同一物理方向重复。结果按总分降序、再按 center
-latitude、longitude、gamma 排序，最多返回五个不同的可行候选。
+所有 audit 记录 `planner_mode=standalone`、`compatibility_profile_version`、
+`specfem_source_verified=false`、`accepted_patch_verified=false`、
+`production_configuration_verified=false`、`par_file_source`、
+`configuration_status` 和 `verification_warnings`。这些 false 不是 planner 失败：独立
+planner 有意不检查用户 SPECFEM source、已安装 patch、mesh 或 runtime validation。
 
-AB 与 AC 在 xi-constant shared interface 相接；C1/C2 是物理 endpoints；external
-face 与内部 interface 不同。靠近 internal interface 仅警告，震源/台站精确落在
-external boundary 或 endpoint 会被拒绝。点会分类为 central chunk、supported-left
-chunk、shared interface、endpoint/external boundary 或 outside。若没有可行候选，仍会
-写出全部输出、rejection summary 和注明无可行候选的 Par_file fragment。
+`recommended_Par_file.inc` 只是建议参数片段，不是完整或可直接运行的 Par_file。复制前
+应审阅 candidates、geometry audit、boundary-time audit、report 与 fragment。
 
-## 7. 边界时间与 NEX/MPI 建议
+## 7. 完整工作流
 
-对可行候选，给出 `--boundary-speed-upper-km-s` 时工具计算采样 surface-arc 的
-source→boundary→station proxy。它始终是 `heuristic_not_conservative`，
-`hard_constraint_used=false`，仅供参考。`analysis_end_s` 优先取
-`--target-energy-end-s`，否则取 `--analysis-window` 终点；所报告 margin 不是 hard
-pass/fail。没有可行候选时状态为 `unavailable`；未给速度时秒数为 null。TauP 不参与
-这一计算。
+1. 安装 package，准备 source 与 stations。
+2. 选择 geometry-only 初筛或 phase-aware 复核。
+3. 可选准备严格 target YAML 和/或 external Par_file。
+4. 向新 output 目录运行 `plan`。
+5. 审阅 candidate 排名、classification、margin、warning 和 resource label。
+6. 在外部 SPECFEM workflow 中自行应用/验证 accepted patch，再验证 mesh/topology、
+   Stacey、solver、waveform 和 external returns。
 
-默认 NEX 为 96×96，总 ranks 关系为 `2*NPROC_XI*NPROC_ETA`。兼容性还取决于当前
-Par_file physics flag。NEX=96 且总 ranks 2、8、12 标记为 `project_validated`；其他
-数学兼容配置仅为 `mathematically_compatible_not_project_validated`。lateral work 只是
-per-rank proxy，不是运行时间预测。
+## 8. Boundary time、许可证与科学状态
 
-## 8. 输出与完整流程
+boundary seconds 始终是 advisory `heuristic_not_conservative` surface-arc proxy；
+`boundary_time_production_safe=false`。sampling stability 为 `indeterminate`
+（Pdiff 0.130094%，Sdiff 0.076131% resample-length difference）。Kim/Song 精确复现
+仍缺作者原始输入。
 
-每次成功运行写出：`candidates.json`、`candidates.csv`、
-`recommended_Par_file.inc`、`geometry_audit.json`、`boundary_time_audit.json`、
-`report.md`、`map.png`、`run_manifest.json`。复制 Par_file fragment 前应检查 patch
-provenance、source/station class 与 margin、`path_audits`、`phase_inventory`、TauP
-metadata、boundary status、NEX/MPI label、warning 和 rejection reason。
-
-推荐流程：准备输入；geometry-only 初筛；可用时做 phase-aware 复核；选择并人工审阅
-候选；把 fragment 手工复制到独立管理的 SPECFEM Par_file；之后独立运行 mesher/database，
-检查 C1/C2 与 Stacey role，运行 solver，并做波形和外边界返回验收。
-
-## 9. 常见问题与限制
-
-- **输出目录已存在：** 选择新路径；工具刻意拒绝覆盖。
-- **patch hash 不匹配：** 停止，核对 project manifest、SPECFEM root 和 accepted patch；
-  不要绕过。
-- **缺依赖或 TauP 无震相：** 不自动安装；strict 失败，partial 只报告原请求的可用路径。
-- **所有候选被拒绝：** 查看 `rejection_summary`；输出仍可审计。
-- **日期变更线：** map 在 ±180° 分段，Cartesian 长度不受影响。
-- **target YAML 错误：** 仅使用上述严格 key/type。
-- **phase-aware 较慢或与 geometry-only 不同：** 前者使用 TauP ray path，后者使用地表
-  大圆；排序是确定性的，不是随机噪声。
-- **boundary time unavailable 或过早：** 它不是生产安全证据；必须单独进行波形/边界返回
-  评估。
-- **MPI 标记非 project-validated：** 它仅数学兼容。
-
-## 10. 当前验证状态
-
-合成 AB→AC Pdiff/Sdiff 与旋转后的 dateline case 已通过；fixture 不是 Kim/Song 输入。
-完整 package 测试为 13 passed。resample 长度差为 Pdiff 14.7813 km（0.130094%）、
-Sdiff 8.6426 km（0.076131%），因此 sampling stability 为 `indeterminate`。当前状态为
-`boundary_time_production_safe=false` 与
-`canonical_geometry_planning_validated__waveform_and_boundary_production_validation_required`。
+本 package 使用 [GPL-3.0-or-later](../LICENSE)；见
+[third-party notices](../THIRD_PARTY_NOTICES.md) 与
+[validation status](validation_status.md)。

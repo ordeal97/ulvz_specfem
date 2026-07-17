@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Deterministic coarse-to-fine search and compatible resource enumeration."""
 from __future__ import annotations
 
@@ -153,7 +154,7 @@ def search(source: Source, stations: list[Station], paths: list[PathRecord], tar
     return SearchResult(sorted(unique_feasible.values(), key=rank)[:5], all_count, len(seen), evaluated_count, feasible_count, rejected_count, dict(sorted(summary.items())))
 
 
-def resource_suggestions(nex_candidates: list[tuple[int, int]], available_ranks: list[int], par: dict[str, str]) -> list[ResourceSuggestion]:
+def resource_suggestions(nex_candidates: list[tuple[int, int]], available_ranks: list[int], par: dict[str, str], validation: dict) -> list[ResourceSuggestion]:
     suggestions: list[ResourceSuggestion] = []
     for nex_xi, nex_eta in nex_candidates:
         for ranks in sorted(set(available_ranks)):
@@ -163,6 +164,6 @@ def resource_suggestions(nex_candidates: list[tuple[int, int]], available_ranks:
                 nproc_eta = ranks // (2 * nproc_xi)
                 compatible, _ = compatible_nex(nex_xi, nex_eta, nproc_xi, nproc_eta, par)
                 if compatible:
-                    status = "project_validated" if ranks in {2, 8, 12} and nex_xi == nex_eta == 96 else "mathematically_compatible_not_project_validated"
+                    status = "project_validated" if ranks in set(validation["project_validated_total_ranks"]) and [nex_xi, nex_eta] == validation["project_validated_nex"] else "mathematically_compatible_not_project_validated"
                     suggestions.append(ResourceSuggestion(nex_xi, nex_eta, nproc_xi, nproc_eta, ranks, nex_xi * nex_eta / (nproc_xi * nproc_eta), status))
     return sorted(suggestions, key=lambda item: (item.relative_lateral_work_per_rank, item.total_ranks, item.nproc_xi, item.nproc_eta))

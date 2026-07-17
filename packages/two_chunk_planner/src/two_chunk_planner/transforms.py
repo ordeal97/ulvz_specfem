@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """SPECFEM-compatible Euler transforms for the canonical regional geometry."""
 from __future__ import annotations
 

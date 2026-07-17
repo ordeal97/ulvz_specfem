@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Canonical two-face domain, classification, and boundary metrics."""
 from __future__ import annotations
 

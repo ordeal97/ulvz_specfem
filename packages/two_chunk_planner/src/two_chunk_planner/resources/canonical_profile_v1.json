@@ -1,0 +1,45 @@
+{
+  "schema": "two_chunk_planner_canonical_profile.v1",
+  "profile_version": "canonical_profile_v1",
+  "planner_mode": "standalone",
+  "canonical_geometry": {
+    "NCHUNKS": 2,
+    "ANGULAR_WIDTH_XI_IN_DEGREES": 90,
+    "ANGULAR_WIDTH_ETA_IN_DEGREES": 90,
+    "attachment": "AB central + AC supported-left",
+    "shared_interface": "AB xi-min <-> AC xi-max",
+    "endpoint_definitions": {
+      "C1": "eta-min endpoint of the AB--AC shared interface",
+      "C2": "eta-max endpoint of the AB--AC shared interface"
+    }
+  },
+  "planning_defaults": {
+    "NEX_XI": 96,
+    "NEX_ETA": 96,
+    "SUPPRESS_CRUSTAL_MESH": ".false.",
+    "ADD_4TH_DOUBLING": ".false.",
+    "ELLIPTICITY": ".false."
+  },
+  "resource_validation": {
+    "project_validated_total_ranks": [2, 8, 12],
+    "project_validated_nex": [96, 96]
+  },
+  "accepted_patch_reference": {
+    "hash_algorithm": "sha256",
+    "formal_candidate_sha256": "8c64f1d1d415ec6c0792f06474dafcffcc698da6ee03ecd21bfd4fdc90b64857",
+    "target_relative_path": "src/meshfem3D/create_chunk_buffers.f90",
+    "provenance": "ULVZ project accepted canonical two-chunk endpoint patch; reference only"
+  },
+  "scientific_scope": {
+    "general_two_chunk_mode_classification": "B",
+    "canonical_90deg_fixture_ready": true,
+    "boundary_time_production_safe": false,
+    "sampling_stability_status": "indeterminate",
+    "limitations": [
+      "Only canonical NCHUNKS=2, 90-degree by 90-degree AB central plus AC supported-left is planned.",
+      "The planner does not inspect, apply, or verify a user's SPECFEM source patch.",
+      "The planner does not run mesher, database generation, solver, Stacey, topology, or waveform acceptance.",
+      "Kim/Song exact reconstruction remains unavailable without author inputs."
+    ]
+  }
+}

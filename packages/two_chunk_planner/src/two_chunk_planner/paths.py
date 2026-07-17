@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Great-circle and optional TauP ray-path adapters.
 
 TauP phase paths are deliberately not used for external-boundary return times.

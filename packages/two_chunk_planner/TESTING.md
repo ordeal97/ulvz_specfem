@@ -1,5 +1,7 @@
 # Planner test report
 
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+
 Validation performed with the project interpreter:
 
 ```bash
@@ -8,7 +10,11 @@ PYTHONPATH=packages/two_chunk_planner/src "$PYTHON" \
   -m pytest packages/two_chunk_planner/tests -q
 ```
 
-Result: **13 passed**.
+Result: **17 passed**.
+
+The v0.2.0 suite additionally validates package-local profile loading,
+no-project-root geometry planning, optional arbitrary `--par-file`, parser/CLI
+reference consistency, GPL package contents, and isolated wheel installation.
 
 Covered cases include Cartesian round trip, accepted C1/C2/interface geometry,
 chunk-1/chunk-2 fixture classification, outside-domain detection, rotation

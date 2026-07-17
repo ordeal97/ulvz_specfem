@@ -904,3 +904,15 @@ pytest 为 13 passed。`phase_aware_runtime_validated=true` 只表示 canonical 
 planning runtime；`canonical_planner_v1_classification` 为
 `canonical_geometry_planning_validated__waveform_and_boundary_production_validation_required`。
 未修改正式源码、build rules 或 accepted patch，未运行大型模拟，未 commit/push。
+
+## 2026-07-17 two-chunk guide geometry and workflow clarification
+
+双语 regional guide 已明确：AB center latitude/longitude、gamma 和两个固定 90°
+宽度唯一确定整个 AB+AC system；AC 没有独立位置或 rotation 参数。手册现在以 planner
+的 fixed center/lon/gamma 调用、`map.png` 和 structured geometry outputs 说明如何确认
+AC 的真实地理 outline 与 source/station 分类；polar center 的等价 longitude/gamma
+canonicalization 也已注明。第 6 节已分离 custom input 的 planner/直接 SPECFEM 运行流程
+与只适用于 teaching fixture 的 `audit_geometry.py`/`run_canonical.sh`，避免将后两者
+误作通用 runner。静态双语检查、固定几何 planner smoke、teaching audit 与 runner dry-run
+均通过；中英文 PDF 分别为 6/5 页并已检查。未运行 mesher/database/solver，未修改正式
+源码、build rules 或 accepted patch，未 commit/push。

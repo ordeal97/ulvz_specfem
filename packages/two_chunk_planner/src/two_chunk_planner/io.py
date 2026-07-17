@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Strict input parsing and report serialization for the read-only planner."""
 from __future__ import annotations
 

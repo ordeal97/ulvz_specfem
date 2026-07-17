@@ -21,7 +21,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 [[ -n "$SPECFEM_ROOT" && -n "$RUN_DIR" ]] || { usage; exit 2; }
-[[ -x "$PYTHON" ]] || { echo "required project Python not found: $PYTHON" >&2; exit 2; }
+if [[ "$PYTHON" == */* ]]; then
+  [[ -x "$PYTHON" ]] || { echo "required project Python not found: $PYTHON" >&2; exit 2; }
+else
+  PYTHON="$(command -v "$PYTHON" || true)"
+  [[ -n "$PYTHON" ]] || { echo "required Python command not found" >&2; exit 2; }
+fi
 [[ -d "$SPECFEM_ROOT" ]] || { echo "invalid SPECFEM root: $SPECFEM_ROOT" >&2; exit 2; }
 SPECFEM_ROOT="$(cd "$SPECFEM_ROOT" && pwd)"
 if [[ ! -x "$SPECFEM_ROOT/bin/xmeshfem3D" || ! -x "$SPECFEM_ROOT/bin/xspecfem3D" ]]; then

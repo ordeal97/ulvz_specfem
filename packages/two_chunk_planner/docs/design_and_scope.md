@@ -3,11 +3,11 @@
 ## Operational authority
 
 The current Python implementation and its successful package-local tests are
-the operational authority for this guide. The planner reads the project-local
-patch manifest and checks the SHA-256 of
-`src/meshfem3D/create_chunk_buffers.f90`; it requires the manifest's formal
-candidate hash `8c64f1d1d415ec6c0792f06474dafcffcc698da6ee03ecd21bfd4fdc90b64857`.
-It does not apply or alter that patch.
+the operational authority for this guide. The planner is deliberately **not**
+a patch verifier: it bundles accepted-patch provenance as a reference, but
+never reads an external manifest, SPECFEM source tree, or source hash. Patch
+installation and verification belong to the separate patch package and
+regional guide.
 
 ## Supported geometry
 

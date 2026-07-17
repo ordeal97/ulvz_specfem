@@ -1,3 +1,4 @@
-"""Read-only planner for the accepted canonical SPECFEM two-chunk geometry."""
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Standalone planner for the canonical SPECFEM two-chunk geometry."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

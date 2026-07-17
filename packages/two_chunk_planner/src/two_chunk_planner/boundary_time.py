@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Boundary-risk reporting without conflating TauP phases and regional reflections."""
 from __future__ import annotations
 

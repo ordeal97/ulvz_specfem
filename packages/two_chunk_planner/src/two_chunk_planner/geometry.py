@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Small spherical-geometry primitives used by the planner.
 
 All public geographic coordinates are degrees.  Cartesian coordinates are

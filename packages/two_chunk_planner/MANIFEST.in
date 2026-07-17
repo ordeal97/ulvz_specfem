@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+include LICENSE
+include README.md
+include THIRD_PARTY_NOTICES.md
+recursive-include src/two_chunk_planner/resources *.json
+recursive-include docs *.md *.css *.json
+recursive-include examples *.md *.yaml *.csv CMTSOLUTION STATIONS Par_file
+prune validation
+global-exclude __pycache__ *.py[cod] .pytest_cache

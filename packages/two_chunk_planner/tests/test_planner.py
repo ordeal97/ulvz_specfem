@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 
 import json
@@ -13,6 +14,7 @@ from two_chunk_planner.geometry import angular_distance_deg, latlon_to_unit, spl
 from two_chunk_planner.io import Source, Station, parse_cmtsolution, parse_stations, parse_target_region, parse_weights
 from two_chunk_planner.optimize import SearchSettings, search
 from two_chunk_planner.paths import geometry_paths, taup_paths
+from two_chunk_planner.profile import canonical_profile
 from two_chunk_planner.transforms import EulerTransform
 
 
@@ -174,3 +176,53 @@ def test_cli_phase_partial_inventory_is_written(tmp_path: Path):
     assert boundary["taup_path_use"] == "forbidden"
     assert boundary["hard_constraint_used"] is False
     assert boundary["boundary_time_production_safe"] is False
+
+
+def test_bundled_profile_is_runtime_resource():
+    profile = canonical_profile()
+    assert profile["profile_version"] == "canonical_profile_v1"
+    assert profile["canonical_geometry"]["NCHUNKS"] == 2
+    assert profile["planning_defaults"]["NEX_XI"] == 96
+
+
+def test_cli_runs_without_project_root_manifest_specfem_or_par_file(tmp_path: Path, monkeypatch):
+    cmtsolution = tmp_path / "CMTSOLUTION"
+    stations = tmp_path / "STATIONS"
+    cmtsolution.write_text((DATA / "CMTSOLUTION").read_text(encoding="utf-8"), encoding="utf-8")
+    stations.write_text((DATA / "STATIONS").read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    output = tmp_path / "standalone"
+    assert main([
+        "plan", "--cmtsolution", str(cmtsolution), "--stations", str(stations),
+        "--analysis-window", "0", "300", "--output", str(output),
+        "--latitude-range", "0,0", "--longitude-range", "0,0", "--gamma-range", "0,0",
+    ]) == 0
+    manifest = json.loads((output / "run_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["planner_mode"] == "standalone"
+    assert manifest["specfem_source_verified"] is False
+    assert manifest["accepted_patch_verified"] is False
+    assert manifest["par_file_source"] == "builtin_profile"
+    assert manifest["configuration_status"] == "planning_defaults_only"
+    assert "not a complete Par_file" in (output / "recommended_Par_file.inc").read_text(encoding="utf-8")
+
+
+def test_cli_external_par_file_is_arbitrary_path(tmp_path: Path):
+    external = tmp_path / "unrelated" / "settings.par"
+    external.parent.mkdir()
+    external.write_text("NEX_XI = 96\nNEX_ETA = 96\nNPROC_XI = 2\nNPROC_ETA = 2\nELLIPTICITY = .false.\n", encoding="utf-8")
+    output = tmp_path / "external"
+    assert main([
+        "plan", "--cmtsolution", str(DATA / "CMTSOLUTION"), "--stations", str(DATA / "STATIONS"),
+        "--analysis-window", "0", "300", "--par-file", str(external), "--output", str(output),
+        "--latitude-range", "0,0", "--longitude-range", "0,0", "--gamma-range", "0,0",
+    ]) == 0
+    manifest = json.loads((output / "run_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["par_file_source"] == "external_file"
+    assert manifest["configuration_status"] == "external_par_file_read"
+
+
+def test_removed_project_and_specfem_options_are_not_parser_options():
+    with pytest.raises(SystemExit):
+        main(["plan", "--project-root", "unused"])
+    with pytest.raises(SystemExit):
+        main(["plan", "--specfem-root", "unused"])

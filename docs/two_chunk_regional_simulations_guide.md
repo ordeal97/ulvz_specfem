@@ -4,6 +4,10 @@ This index links the content-equivalent project manuals:
 
 - [English guide](two_chunk_regional_simulations_guide_en.md)
 - [中文版手册](two_chunk_regional_simulations_guide_zh.md)
+- [English PDF](two_chunk_regional_simulations_guide_en.pdf)
+- [中文 PDF](two_chunk_regional_simulations_guide_zh.pdf)
+- [Absorbing-boundary source audit](two_chunk_absorbing_boundary_audit.md)
+- [Guide revision report](two_chunk_regional_simulations_guide_revision_report.md)
 
 ## Applicability / 适用范围
 
@@ -33,9 +37,10 @@ Apply the accepted project-local package only after its manifest-based hash and
 context check:
 
 ~~~bash
+PATCH="$(pwd)/patches/specfem3d_globe/two_chunk_endpoints/specfem3d_globe_two_chunk_endpoints.patch"
 patches/specfem3d_globe/two_chunk_endpoints/verify_patch.sh specfem3d_globe
 git -C specfem3d_globe apply --check \
-  patches/specfem3d_globe/two_chunk_endpoints/specfem3d_globe_two_chunk_endpoints.patch
+  "$PATCH"
 ~~~
 
 See [project patch instructions](two_chunk_project_patch.md). Stop when the

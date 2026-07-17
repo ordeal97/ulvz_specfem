@@ -1,0 +1,471 @@
+{
+  "command": "two-chunk-planner plan",
+  "options": [
+    {
+      "choices": null,
+      "default": null,
+      "dest": "cmtsolution",
+      "flags": [
+        "--cmtsolution"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "source",
+      "flags": [
+        "--source"
+      ],
+      "help": null,
+      "metavar": [
+        "LAT",
+        "LON",
+        "DEPTH_KM"
+      ],
+      "nargs": 3,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "stations",
+      "flags": [
+        "--stations"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "stations_csv",
+      "flags": [
+        "--stations-csv"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "phases",
+      "flags": [
+        "--phases"
+      ],
+      "help": "comma-separated TauP phase names",
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "analysis_window",
+      "flags": [
+        "--analysis-window"
+      ],
+      "help": null,
+      "metavar": [
+        "START_S",
+        "END_S"
+      ],
+      "nargs": 2,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "target_energy_end_s",
+      "flags": [
+        "--target-energy-end-s"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "target_region",
+      "flags": [
+        "--target-region"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "weights",
+      "flags": [
+        "--weights"
+      ],
+      "help": "strict YAML mapping of coverage/external_margin/endpoint_margin/cost weights",
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": [
+        "geometry-only",
+        "phase-aware"
+      ],
+      "default": "geometry-only",
+      "dest": "path_mode",
+      "flags": [
+        "--path-mode"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 121,
+      "dest": "path_samples",
+      "flags": [
+        "--path-samples"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": "prem",
+      "dest": "taup_model",
+      "flags": [
+        "--taup-model"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": false,
+      "dest": "taup_resample",
+      "flags": [
+        "--taup-resample"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": 0,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 1e-06,
+      "dest": "ray_param_tol",
+      "flags": [
+        "--ray-param-tol"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 25.0,
+      "dest": "cmb_near_depth_tolerance_km",
+      "flags": [
+        "--cmb-near-depth-tolerance-km"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": false,
+      "dest": "allow_partial_phase_coverage",
+      "flags": [
+        "--allow-partial-phase-coverage"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": 0,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "boundary_speed_upper_km_s",
+      "flags": [
+        "--boundary-speed-upper-km-s"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 1.0,
+      "dest": "minimum_path_coverage",
+      "flags": [
+        "--minimum-path-coverage"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "available_ranks",
+      "flags": [
+        "--available-ranks"
+      ],
+      "help": "comma-separated total MPI-rank candidates; default uses external Par_file NPROC or profile 2,8,12",
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "nex",
+      "flags": [
+        "--nex"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": true,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "max_compute_cost",
+      "flags": [
+        "--max-compute-cost"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": "[-90.0, 90.0]",
+      "dest": "latitude_range",
+      "flags": [
+        "--latitude-range"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": "[-180.0, 180.0]",
+      "dest": "longitude_range",
+      "flags": [
+        "--longitude-range"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": "[0.0, 360.0]",
+      "dest": "gamma_range",
+      "flags": [
+        "--gamma-range"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 10.0,
+      "dest": "coarse_latitude_step",
+      "flags": [
+        "--coarse-latitude-step"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 10.0,
+      "dest": "coarse_longitude_step",
+      "flags": [
+        "--coarse-longitude-step"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 15.0,
+      "dest": "coarse_gamma_step",
+      "flags": [
+        "--coarse-gamma-step"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 2.0,
+      "dest": "local_latitude_step",
+      "flags": [
+        "--local-latitude-step"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 2.0,
+      "dest": "local_longitude_step",
+      "flags": [
+        "--local-longitude-step"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 3.0,
+      "dest": "local_gamma_step",
+      "flags": [
+        "--local-gamma-step"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 0.5,
+      "dest": "final_latitude_step",
+      "flags": [
+        "--final-latitude-step"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 0.5,
+      "dest": "final_longitude_step",
+      "flags": [
+        "--final-longitude-step"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": 0.5,
+      "dest": "final_gamma_step",
+      "flags": [
+        "--final-gamma-step"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "par_file",
+      "flags": [
+        "--par-file"
+      ],
+      "help": "optional arbitrary Par_file read only for resource compatibility; no SPECFEM source is verified",
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": false
+    },
+    {
+      "choices": null,
+      "default": null,
+      "dest": "output",
+      "flags": [
+        "--output"
+      ],
+      "help": null,
+      "metavar": null,
+      "nargs": null,
+      "repeatable": false,
+      "required": true
+    }
+  ],
+  "schema": "two_chunk_planner_cli_options.v1"
+}

@@ -1,0 +1,10 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+body { font-family: "DejaVu Sans", "Noto Sans CJK SC", sans-serif; font-size: 10pt; line-height: 1.38; }
+code, pre { font-family: "DejaVu Sans Mono", monospace; font-size: 8.5pt; }
+pre { white-space: pre-wrap; border: 1px solid #d8d8d8; padding: 8px; background: #fafafa; }
+table { border-collapse: collapse; width: 100%; page-break-inside: avoid; }
+th, td { border: 1px solid #bbb; padding: 4px; vertical-align: top; }
+h1, h2 { color: #17365d; page-break-after: avoid; }
+h2 { margin: 1.2em 0 0.75em; }
+h3 { margin: 0.9em 0 0.45em; page-break-after: avoid; }
+a { color: #1a5b9e; }
