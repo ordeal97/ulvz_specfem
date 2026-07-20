@@ -29,3 +29,16 @@ reports there. It does not modify a source `Par_file`, SPECFEM source, build
 rules, the accepted patch, or any mesh/database/solver input. Users must run
 all downstream mesh, Stacey, decomposition, waveform, and external-return
 validation separately.
+
+## Runtime implementation boundary
+
+The public interface is the `plan` CLI documented in the two CLI references.
+The internal Python `SearchDiagnostics` and orientation-batch hooks exist only
+for test/performance diagnostics and are not CLI options. During a run, TauP
+paths are prepared once before the deterministic coarse/local/final search;
+continuous NumPy vectors and blocked orientation batches accelerate path
+coverage. Compact search evaluations retain only the fields required for
+feasibility and ranking, while conservative scalar checks and the final full
+`GeometryCandidate` audit preserve the user-visible score, ordering, warnings
+and JSON semantics. No runtime cache is written to disk or reused by a later
+CLI invocation.

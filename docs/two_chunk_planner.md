@@ -16,9 +16,9 @@ The planner can recommend only:
 - candidate MPI decompositions with total ranks
   `2*NPROC_XI*NPROC_ETA`.
 
-It verifies that `create_chunk_buffers.f90` has the accepted candidate hash in
-the project patch manifest before producing a runnable recommendation. It does
-not apply that patch. Non-90° widths, rectangular chunks, other attachment
+It does not inspect or verify a SPECFEM checkout, patch, manifest or source
+hash, and it does not apply a patch. Patch installation/verification is a
+separate SPECFEM workflow. Non-90° widths, rectangular chunks, other attachment
 sides, independent orientations, arbitrary two-chunk topology, and multi-chunk
 configuration are rejected or absent from the interface.
 
@@ -57,12 +57,16 @@ labels in the audit JSON.
 
 The search is deterministic: a global coarse center/gamma grid, fixed local
 refinement, stable polar/domain deduplication, then score ordering by score and
-coordinates. The report records generated, deduplicated, evaluated, feasible
-and rejected counts. At most five nonduplicate feasible candidates are emitted;
-fewer are returned when necessary, and no-feasible-candidate cases still write
-all audits and a rejection summary.
+coordinates. TauP paths are prepared once before search. The orientation loop
+uses continuous NumPy path vectors and blocked batch evaluation while retaining
+only compact feasibility/ranking data; conservative scalar checks and the final
+full `GeometryCandidate` audit preserve the existing score, order, tie-break,
+warnings and serialized output. The report records generated, deduplicated,
+evaluated, feasible and rejected counts. At most five nonduplicate feasible
+candidates are emitted; fewer are returned when necessary, and no-feasible-
+candidate cases still write all audits and a rejection summary.
 
-Hard constraints cover canonical geometry/patch provenance, in-domain
+Hard constraints cover canonical geometry, in-domain
 source/stations, no exact endpoint/external-boundary placement, required path
 coverage, optional target containment, and current Par_file NEX/MPI rules.
 The scoring audit exposes coverage, boundary margin, C1/C2 margin, lateral work
@@ -102,12 +106,19 @@ margin; `hard_constraint_used=false` and
 - `candidates.json` and `candidates.csv`;
 - `recommended_Par_file.inc`;
 - `geometry_audit.json` and `boundary_time_audit.json`;
-- `map.png`, `report.md`, and `run_manifest.json`.
+- `map.png`, `globe.png`, `report.md`, and `run_manifest.json`.
 
 The map draws external boundaries, AB–AC, C1/C2, source, stations, sampled
 path corridors, an optional target boundary/centerline, and the source-nearest
 sampled external-boundary point. It splits paths at the date line rather than
-drawing a false map-wide longitude chord.
+drawing a false map-wide longitude chord. `globe.png` provides the corresponding
+three-dimensional view of the spherical closed boundaries. The map's ±180°
+splits and high-latitude/great-circle projection distortion are rendering
+properties, not gaps in the two-chunk surface.
+
+These nine files are ordinary planner output. Performance acceptance products
+such as `summary.json`, `performance_matrix.csv`, profiles and persistent logs
+are created only under dedicated project `results/` directories.
 
 Review the proposed fragment, run the existing input audit, mesher/database
 checks, C1/C2 and Stacey checks, and waveform/return-time validation separately.
@@ -127,3 +138,18 @@ plots. Geometry-only and phase-aware results use their documented path types
 and repeat deterministically. This validates canonical geometry planning, not
 waveform accuracy or production boundary-return safety:
 `canonical_geometry_planning_validated__waveform_and_boundary_production_validation_required`.
+
+## Event 1 performance acceptance
+
+The real Event 1 partial phase-aware case requested S and Sdiff for 127
+stations. It returned 127 S paths (66,650 points) and explicitly recorded 127
+missing Sdiff pairs; NEX=448 affected resource suggestions, not orientation
+candidate count or path-point count. In the third-round acceptance, two
+complete persistent runs finished in 12:31.62 and 12:28.80 with exit status
+zero and recursively identical planner outputs; 20 package tests passed. This
+is about 32% faster than the preceding approximately 18.5-minute runs. The old
+implementation has only a >1800 s timeout lower bound, so no exact old/new
+speedup is claimed. End-to-end correctness/reproducibility is accepted, but the
+10-minute performance target was not met. Detailed evidence is in
+`docs/two_chunk_planner_high_frequency_search.md` and
+`results/two_chunk_planner_high_frequency_search_20260720T111204Z_third_round/`.

@@ -25,6 +25,11 @@ below are parser defaults. Exactly one source form and exactly one station form
 are required. At least one of phases, analysis window, or target-energy end is
 required. An existing output directory is always refused.
 
+The installed `two-chunk-planner` entry point and
+`PYTHONPATH=packages/two_chunk_planner/src /usr/bin/python3 -m two_chunk_planner`
+use this same parser. The latter is a repository-development invocation, not a
+separate CLI mode.
+
 ## 1. Source and station input
 
 ### `--cmtsolution`
@@ -219,8 +224,14 @@ an external workflow needs a persistent log.
 
 ### `--output`
 Short form: none. Type: directory path; required. Example: `--output plan_out`.
-Must not exist. On success it receives JSON/CSV audits, Par_file fragment,
-report, map, and manifest. Reusing a directory is a deliberate error.
+Must not exist. On success it receives `candidates.json`, `candidates.csv`,
+`geometry_audit.json`, `boundary_time_audit.json`, `run_manifest.json`,
+`recommended_Par_file.inc`, `report.md`, `map.png`, and `globe.png`.
+Geometry-only and phase-aware modes write the same file names; phase-aware
+adds requested/provided/missing TauP inventory and TauP path metadata to the
+structured output. Reusing a directory is a deliberate error. Performance
+acceptance files such as `summary.json`, `performance_matrix.csv`, profiles and
+persistent logs are not planner output.
 
 ## License and limits
 
@@ -230,3 +241,5 @@ This package is GPL-3.0-or-later; see [LICENSE](../LICENSE) and
 validated, sampling stability is `indeterminate`, and
 `boundary_time_production_safe=false`. It neither verifies the user patch nor
 replaces mesher/database/solver, Stacey, topology, or waveform acceptance.
+For the concise Event 1 runtime result and detailed evidence, see the
+[project performance record](../../../docs/two_chunk_planner_high_frequency_search.md).

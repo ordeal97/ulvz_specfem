@@ -90,7 +90,8 @@ the whole pair. AC is therefore not a second region that the user places.
 
 For a selected center/lon/gamma, use `two_chunk_planner plan` with the same
 minimum and maximum for each search range. Its `map.png` shows the transformed
-AB/AC outline and interface; `geometry_audit.json` and `candidates.json` report
+AB/AC outline and interface, while `globe.png` shows their closed spherical
+relationship; `geometry_audit.json` and `candidates.json` report
 source/station chunk labels, local xi/eta, interface, C1/C2, and exposed-boundary
 margins. This is the operational way to decide whether the intended geographic
 region falls in AB, AC, the shared interface, or outside. It is a pre-mesh
@@ -202,7 +203,8 @@ formal patch acceptance. Every writing command uses a new output directory.
    values marked for replacement; the output directory must not exist.
 
 ~~~bash
-export ULVZ_PYTHON=/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python
+# Set this to the project-managed interpreter, for example /path/to/ulvz-specfem/bin/python.
+export ULVZ_PYTHON=/path/to/ulvz-specfem/bin/python
 SPECFEM_ROOT="$(pwd)/specfem3d_globe"
 INPUT_DATA="/absolute/path/to/YOUR_CASE/DATA"
 CENTER_LAT=20.0
@@ -217,7 +219,8 @@ PYTHONPATH=packages/two_chunk_planner/src $ULVZ_PYTHON -m two_chunk_planner plan
   --gamma-range "$GAMMA,$GAMMA" --output "$PLAN_DIR"
 ~~~
 
-3. Open `PLAN_DIR/map.png` to see the actual geographic AB/AC boundaries. Read
+3. Open `PLAN_DIR/map.png` and `PLAN_DIR/globe.png` to see the actual geographic
+   and closed-sphere AB/AC boundaries. Read
    the chosen candidate's point classifications before continuing. If no
    feasible candidate is returned, or a required point is outside/on an
    endpoint/external boundary, stop and change geometry. Review—not blindly

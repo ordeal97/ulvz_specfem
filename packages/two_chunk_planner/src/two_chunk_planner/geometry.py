@@ -104,13 +104,24 @@ def chord_length_km(points: Iterable[tuple[float, float, float]], radius_km: flo
 
 
 def split_dateline(points: list[tuple[float, float]]) -> list[list[tuple[float, float]]]:
-    """Split lon/lat lines for Matplotlib rather than drawing a map-wide chord."""
+    """Split lon/lat lines at the dateline without a map-wide chord.
+
+    Each returned segment explicitly ends and starts on opposite dateline
+    meridians.  This preserves an individual finite arc while preventing a
+    plotting backend from joining it across the map or to another arc.
+    """
     if not points:
         return []
     result: list[list[tuple[float, float]]] = [[points[0]]]
     for point in points[1:]:
-        if abs(point[1] - result[-1][-1][1]) > 180.0:
-            result.append([point])
+        previous = result[-1][-1]
+        if abs(point[1] - previous[1]) > 180.0:
+            end_lon = 180.0 if previous[1] > 0.0 else -180.0
+            unwrapped_lon = point[1] + (-360.0 if point[1] > previous[1] else 360.0)
+            fraction = (end_lon - previous[1]) / (unwrapped_lon - previous[1])
+            latitude = previous[0] + fraction * (point[0] - previous[0])
+            result[-1].append((latitude, end_lon))
+            result.append([(latitude, -end_lon), point])
         else:
             result[-1].append(point)
     return result

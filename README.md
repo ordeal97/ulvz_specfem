@@ -152,6 +152,11 @@ Start here:
 - `docs/ulvz_mesh_visualization_guide.md`: plotting and export guide.
 - `docs/task_3f_plan.md`: ParaView export plan.
 - `docs/task_3f_paraview_export.md`: ParaView export user guide.
+- `packages/two_chunk_planner/`: standalone, read-only canonical two-chunk
+  geometry planner; start with its [English user guide](packages/two_chunk_planner/docs/user_guide_en.md)
+  or [中文使用指南](packages/two_chunk_planner/docs/user_guide_zh.md).
+- `docs/two_chunk_planner_high_frequency_search.md`: Event 1 planner
+  performance and acceptance record.
 - `docs/github_publish_workflow.md`: GitHub publishing process.
 
 ## Publishing

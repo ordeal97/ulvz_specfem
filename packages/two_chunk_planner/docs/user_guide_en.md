@@ -42,11 +42,15 @@ two-chunk-planner --help
 python -m two_chunk_planner --help
 ```
 
-For package development only, run without installing:
+For package development only, run without installing from the repository root:
 
 ```bash
-PYTHONPATH=src python -m two_chunk_planner --help
+PYTHONPATH=packages/two_chunk_planner/src /usr/bin/python3 -m two_chunk_planner --help
 ```
+
+The installed `two-chunk-planner` command and the zero-install
+`python -m two_chunk_planner` form run the same planner. The latter is useful
+when developing this repository; it is not a second planner mode.
 
 ## 3. Quick standalone cases
 
@@ -93,7 +97,45 @@ The [English CLI reference](cli_reference_en.md) and
 35-option list. Use them for TauP, target, search, scoring, NEX/MPI and output
 details; this guide explains only common workflow choices.
 
-## 5. Path modes and planning
+## 5. Event-style phase-aware command
+
+Use a new output directory for every run. This portable form is equivalent to
+the Event 1 acceptance command, but intentionally uses placeholder paths:
+
+```bash
+D=/path/to/DATA
+OUT=/path/to/planner_output
+
+PYTHONPATH=packages/two_chunk_planner/src \
+/usr/bin/python3 -m two_chunk_planner plan \
+  --cmtsolution "$D/CMTSOLUTION" \
+  --stations "$D/STATIONS" \
+  --par-file "$D/Par_file" \
+  --path-mode phase-aware \
+  --phases S,Sdiff \
+  --allow-partial-phase-coverage \
+  --taup-model prem \
+  --taup-resample \
+  --analysis-window 0 1600 \
+  --output "$OUT"
+```
+
+There must be no space after a shell continuation backslash. `--par-file` is
+optional and read only: it supplies NEX/NPROC and compatibility context for
+resource suggestions, but it does not change the geometry search, locate a
+SPECFEM checkout, verify a patch, or edit the file. `--analysis-window` gives
+the advisory boundary-time comparison its end time; it is not a production
+boundary-safety proof.
+
+`--taup-resample` requests the program's documented TauP-path resampling and
+records that choice in the path metadata. It does not establish waveform
+accuracy. With `--allow-partial-phase-coverage`, unavailable requested
+station-phase pairs are recorded and not substituted. For example, missing
+Sdiff arrivals remain missing; available S paths can still be planned and the
+output contains the requested/provided/missing inventory. Without that flag,
+all missing pairs are reported and planning stops.
+
+## 6. How planning works
 
 `geometry-only` is the default and uses sampled surface great circles.
 `phase-aware` requests each requested phase×station with TauP; Pdiff/Sdiff
@@ -102,16 +144,68 @@ requires `--allow-partial-phase-coverage` and never substitutes a phase.
 TauP length is `taup_raypath_polyline_estimate`; CMB-near information is a
 sampled proxy. TauP is forbidden for boundary-return timing.
 
-Search is deterministic coarse/local/final center-gamma refinement. Candidate
-geometry remains canonical; target coverage, external margins and endpoint
-margins are hard/transparent checks. NEX=96 at total ranks 2/8/12 is labelled
+The planner reads the source, stations, optional target and phase paths; then
+it searches a canonical two-chunk location and orientation in deterministic
+coarse, local and final stages. Every candidate checks source, station, target
+and path coverage; external-boundary and C1/C2 endpoint margins contribute to
+the transparent score. A final resource pass checks NEX/NPROC compatibility
+and suggests compatible decompositions.
+
+TauP paths are prepared before orientation search, once for each requested
+source/station/phase/model/resampling combination. The planner stores their
+global unit vectors in continuous NumPy arrays, rotates fixed chunk geometry
+for small orientation batches, and evaluates path coverage and finite-arc
+distances with blocked numerical operations. Search candidates keep only the
+compact feasibility, rejection, score and ordering data needed for the three
+stages. Conservative numerical guards trigger an exact scalar review for
+keeper candidates when needed; the chosen candidate always receives the full
+scalar `GeometryCandidate` audit used for JSON output. These implementation
+details are automatic: they do not remove candidates, stations, phases or path
+points, and they do not change score, stable sorting or tie-breaking.
+
+NEX is not an orientation-search control. It and NPROC affect only the later
+compatibility/resource recommendation. NEX=96 at total ranks 2/8/12 is labelled
 `project_validated`; other compatible choices are not project-validated.
 
-## 6. Outputs and verification boundary
+## 7. Planner output directory
 
-Each successful run writes `candidates.json`, `candidates.csv`,
-`geometry_audit.json`, `boundary_time_audit.json`, `report.md`, `map.png`,
-`run_manifest.json`, and `recommended_Par_file.inc`.
+Every successful `plan` run writes the following common files. They are
+ordinary planner outputs, not performance-validation artifacts.
+
+| File | Type and purpose | Usually inspect |
+| --- | --- | --- |
+| `report.md` | Short human-readable planning result. | Returned count, recommended center/gamma, score and phase inventory. |
+| `candidates.json` | Structured search result with up to five ranked feasible candidates, search counts, rejection summary, phase inventory and path records. | `search`, `candidates`, `phase_inventory`, `phase_paths`. |
+| `candidates.csv` | Flat summary of returned candidates. | Candidate coordinates, score and feasibility. |
+| `geometry_audit.json` | Full scalar audit for the chosen candidate (or `chosen_candidate: null`). | Source/station classifications, `path_audits`, target audit, margins, score, warnings and rejection reasons. |
+| `boundary_time_audit.json` | Advisory surface-arc boundary-time proxy. | `global_status`, records and margin to `analysis_end_s`; never treat it as a hard safety proof. |
+| `recommended_Par_file.inc` | Review-only canonical geometry and resource fragment. | NCHUNKS, widths, center, gamma and any NEX/NPROC recommendation before manually transferring them to a Par_file. |
+| `run_manifest.json` | Input/run provenance and mode metadata. | Source, stations, path mode, TauP settings, profile and Par_file provenance. |
+| `map.png` | Latitude/longitude map. | Source, stations, paths, target, outer arcs and AB--AC interface. |
+| `globe.png` | Three-dimensional globe view. | The closed spherical relationship of source, stations, paths and both chunks. |
+
+The file set is the same for geometry-only and phase-aware runs. In
+geometry-only mode, `run_manifest.json` stores null TauP settings and
+`phase_inventory` has no requested TauP pairs; `phase_paths` contains the
+sampled surface geometry paths. In phase-aware mode, the manifest stores TauP
+model/resampling settings, `phase_inventory` records requested/provided/missing
+pairs, and `phase_paths` contains returned geographic TauP paths. `report.md`
+adds a phase-inventory section in phase-aware mode.
+
+The final geometry is described by `center_latitude_deg`,
+`center_longitude_deg` and `gamma_rotation_azimuth_deg`; together with the
+fixed canonical 90° widths they define both chunks. AB is central and AC is
+supported-left: AC has no independent position or rotation. `source`,
+`stations` and `path_audits` report chunk classification, coverage and minimum
+external/C1/C2 distances. `score_components` exposes coverage, external and
+endpoint margins, cost proxy, normalized values and weights. `warnings` and
+`rejection_reasons` must be reviewed rather than ignored.
+
+`map.png` is a longitude-latitude projection. A spherical closed outer arc
+that crosses ±180° is deliberately split there rather than joined by a false
+map-wide chord; high-latitude and great-circle arcs can also look strongly
+curved or distorted in this projection. Use `globe.png` to inspect the same
+boundaries as closed spherical geometry.
 
 All audits record `planner_mode=standalone`, `compatibility_profile_version`,
 `specfem_source_verified=false`, `accepted_patch_verified=false`,
@@ -122,9 +216,27 @@ user's SPECFEM source, installed patch, mesh, or runtime validation.
 
 `recommended_Par_file.inc` is a suggested parameter fragment, not a complete
 or runnable Par_file. Review candidates, geometry audit, boundary-time audit,
-report and fragment before copying anything manually.
+report and fragment before copying anything manually. Files such as
+`summary.json`, `performance_matrix.csv`, profiles and persistent shell logs
+belong only to dedicated performance-validation directories; `plan` never
+creates them.
 
-## 7. Complete workflow
+## 8. How to read a result quickly
+
+1. Read `report.md` and `candidates.json`. A positive returned count and a
+   feasible first candidate mean a layout was found.
+2. Inspect `geometry_audit.json`: source and every required station should be
+   in-domain; every required path should meet its coverage threshold; external
+   boundary and C1/C2 margins should be suitable for the scientific review.
+3. Read `phase_inventory` and `warnings`. Partial coverage is explicit; a
+   missing Sdiff is not silently replaced by S.
+4. Review `recommended_Par_file.inc` with the original `Par_file`. Confirm
+   NEX/NPROC multiple and divisibility requirements, and distinguish values
+   read from the external Par_file from planner suggestions.
+5. Inspect both figures, then complete separate SPECFEM mesh, topology,
+   Stacey, solver, waveform and boundary-return validation.
+
+## 9. Complete workflow
 
 1. Install the package and prepare source/stations.
 2. Choose geometry-only screening or phase-aware review.
@@ -134,7 +246,7 @@ report and fragment before copying anything manually.
 6. In a separate SPECFEM workflow, apply/verify the accepted patch, then validate
    mesh/topology, Stacey, solver, waveform and external returns.
 
-## 8. Boundary time, license and scientific status
+## 10. Validation, performance and scientific status
 
 Boundary seconds are always advisory `heuristic_not_conservative` surface-arc
 proxies; `boundary_time_production_safe=false`. Sampling stability is
@@ -144,3 +256,11 @@ Kim/Song exact reconstruction remains unavailable without author inputs.
 This package is [GPL-3.0-or-later](../LICENSE); see
 [third-party notices](../THIRD_PARTY_NOTICES.md) and
 [validation status](validation_status.md).
+
+The preserved Event 1 phase-aware acceptance completed twice in 12:31.62 and
+12:28.80, with strictly identical outputs and 20 package tests passing. This
+was about 32% faster than the preceding approximately 18.5-minute run, while
+the old implementation has only a >1800 s timeout lower bound. The 10-minute
+goal was not met. Runtime depends mainly on orientation candidates, returned
+phase paths and path sampling points, not on NEX alone. See the detailed
+[Event 1 performance record](../../../docs/two_chunk_planner_high_frequency_search.md).

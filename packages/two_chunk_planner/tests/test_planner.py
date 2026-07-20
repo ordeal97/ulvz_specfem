@@ -12,7 +12,8 @@ from two_chunk_planner.domain import CanonicalTwoChunkDomain
 from two_chunk_planner.errors import PlannerError
 from two_chunk_planner.geometry import angular_distance_deg, latlon_to_unit, split_dateline, unit_to_latlon
 from two_chunk_planner.io import Source, Station, parse_cmtsolution, parse_stations, parse_target_region, parse_weights
-from two_chunk_planner.optimize import SearchSettings, search
+from two_chunk_planner.objective import evaluate_geometry, evaluate_geometry_scalar_summary, evaluate_geometry_summaries, prepare_geometry_inputs
+from two_chunk_planner.optimize import SearchSettings, SearchTrace, _around, _grid, search
 from two_chunk_planner.paths import geometry_paths, taup_paths
 from two_chunk_planner.profile import canonical_profile
 from two_chunk_planner.transforms import EulerTransform
@@ -84,6 +85,96 @@ def test_deterministic_fixed_search_and_canonical_inc(tmp_path: Path):
     second = search(source, stations, paths, None, False, 1.0, settings)
     assert first.feasible_count == second.feasible_count == 1
     assert [item.to_dict() for item in first.candidates] == [item.to_dict() for item in second.candidates]
+
+
+def _reference_search(source, stations, paths, target, ellipticity, coverage, settings, weights=None):
+    """Pre-optimization full-audit implementation used only for equivalence tests."""
+    all_count = evaluated = feasible = rejected = 0
+    seen, summary, best = set(), {}, []
+    trace = {"generated": {}, "evaluated": {}, "keepers": {}}
+    rank = lambda item: (-item.total_score, item.center_latitude_deg, item.center_longitude_deg, item.gamma_rotation_azimuth_deg)
+
+    def run(stage, parameters, keep):
+        nonlocal all_count, evaluated, feasible, rejected
+        all_count += len(parameters)
+        trace["generated"][stage] = list(parameters)
+        trace["evaluated"][stage] = []
+        retained = []
+        for latitude, longitude, gamma in parameters:
+            key = (latitude, longitude, gamma)
+            if key in seen:
+                continue
+            seen.add(key)
+            item = evaluate_geometry(CanonicalTwoChunkDomain(EulerTransform(latitude, longitude, gamma, ellipticity)), latitude, longitude, gamma, source, stations, paths, target, coverage, weights)
+            trace["evaluated"][stage].append(item)
+            evaluated += 1
+            if item.feasible:
+                feasible += 1
+                best.append(item)
+                if len(best) > 10:
+                    best[:] = sorted(best, key=rank)[:5]
+            else:
+                rejected += 1
+                for reason in item.rejection_reasons:
+                    summary[reason] = summary.get(reason, 0) + 1
+            retained.append(item)
+            if len(retained) > keep * 2:
+                retained = sorted(retained, key=rank)[:keep]
+        selected = sorted(retained, key=rank)[:keep]
+        trace["keepers"][stage] = [(item.center_latitude_deg, item.center_longitude_deg, item.gamma_rotation_azimuth_deg) for item in selected]
+        return selected
+
+    coarse = run("coarse", _grid(settings), 20)
+    local = run("local", [value for item in coarse for value in _around(item, 10.0, 10.0, 15.0, settings.local_latitude_step, settings.local_longitude_step, settings.local_gamma_step, settings)], 20)
+    run("final", [value for item in local[:5] for value in _around(item, 2.0, 2.0, 2.0, settings.final_latitude_step, settings.final_longitude_step, settings.final_gamma_step, settings)], 20)
+    chosen = sorted({(item.center_latitude_deg, item.center_longitude_deg, item.gamma_rotation_azimuth_deg): item for item in best}.values(), key=rank)[:5]
+    return chosen, (all_count, len(seen), evaluated, feasible, rejected, dict(sorted(summary.items()))), trace
+
+
+@pytest.mark.parametrize("settings", [
+    SearchSettings(latitude_min=0, latitude_max=0, longitude_min=0, longitude_max=0, gamma_min=0, gamma_max=0),
+    SearchSettings(latitude_min=-10, latitude_max=10, longitude_min=-20, longitude_max=20, gamma_min=0, gamma_max=30, coarse_latitude_step=10, coarse_longitude_step=10, coarse_gamma_step=15, local_latitude_step=2, local_longitude_step=2, local_gamma_step=3, final_latitude_step=0.5, final_longitude_step=0.5, final_gamma_step=0.5),
+])
+def test_compact_search_matches_full_audit_reference(settings):
+    source, stations = parse_cmtsolution(DATA / "CMTSOLUTION"), parse_stations(DATA / "STATIONS")
+    paths = geometry_paths(source, stations, 7)
+    expected, counts, reference_trace = _reference_search(source, stations, paths, None, False, 1.0, settings)
+    trace = SearchTrace.empty()
+    actual = search(source, stations, paths, None, False, 1.0, settings, trace=trace)
+    assert (actual.all_candidate_count, actual.deduplicated_candidate_count, actual.evaluated_count, actual.feasible_count, actual.rejected_count, actual.rejection_summary) == counts
+    assert trace.generated == reference_trace["generated"]
+    assert trace.keepers == reference_trace["keepers"]
+    for stage, expected_items in reference_trace["evaluated"].items():
+        observed = trace.evaluated[stage]
+        assert [(item.center_latitude_deg, item.center_longitude_deg, item.gamma_rotation_azimuth_deg) for item in observed] == [(item.center_latitude_deg, item.center_longitude_deg, item.gamma_rotation_azimuth_deg) for item in expected_items]
+        for compact, full in zip(observed, expected_items):
+            assert compact.evaluation.feasible == full.feasible
+            assert compact.evaluation.rejection_reasons == tuple(full.rejection_reasons)
+            assert compact.evaluation.warnings == tuple(full.warnings)
+            assert compact.evaluation.coverage == full.score_components["coverage"]
+            assert compact.evaluation.external_margin == pytest.approx(full.score_components["external_margin"], abs=1.0e-10)
+            assert compact.evaluation.endpoint_margin == pytest.approx(full.score_components["endpoint_margin"], abs=1.0e-12)
+            assert compact.evaluation.total_score == pytest.approx(full.total_score, abs=1.0e-12)
+    assert [item.to_dict() for item in actual.candidates] == [item.to_dict() for item in expected]
+
+
+def test_multi_orientation_path_batch_matches_scalar_reference():
+    source, stations = parse_cmtsolution(DATA / "CMTSOLUTION"), parse_stations(DATA / "STATIONS")
+    paths = geometry_paths(source, stations, 7)
+    parameters = ((0.0, 0.0, 0.0), (10.0, -20.0, 15.0), (-10.0, 30.0, 45.0))
+    domains = tuple(CanonicalTwoChunkDomain(EulerTransform(*item)) for item in parameters)
+    prepared = prepare_geometry_inputs(source, stations, paths, None, False)
+    observed, uncertain = evaluate_geometry_summaries(domains, source, stations, paths, None, prepared, 1.0)
+    assert not uncertain.any()
+    for parameter, domain, batch in zip(parameters, domains, observed):
+        scalar = evaluate_geometry_scalar_summary(domain, *parameter, source, stations, paths, None, 1.0)
+        assert batch.feasible == scalar.feasible
+        assert batch.rejection_reasons == scalar.rejection_reasons
+        assert batch.warnings == scalar.warnings
+        assert batch.coverage == scalar.coverage
+        assert batch.external_margin == pytest.approx(scalar.external_margin, abs=1.0e-10)
+        assert batch.endpoint_margin == pytest.approx(scalar.endpoint_margin, abs=1.0e-12)
+        assert batch.total_score == pytest.approx(scalar.total_score, abs=1.0e-12)
 
 
 def test_taup_strict_missing_pairs_are_aggregated():

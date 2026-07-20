@@ -18,3 +18,15 @@ and [examples](examples/README.md). The bundled values are planning defaults
 only: separately apply and verify the accepted patch before production work.
 See [LICENSE](LICENSE), [third-party notices](THIRD_PARTY_NOTICES.md),
 [TESTING.md](TESTING.md), and [validation status](docs/validation_status.md).
+
+## Current runtime and validation
+
+`plan` is still the only normal user command. Its internal NumPy batch
+evaluation is automatic: it does not change the deterministic candidate set,
+score, ordering, tie-breaking, station set, requested phases, or path samples.
+For the preserved real Event 1 phase-aware input, two complete third-round
+runs took about 12.5 minutes and produced strictly identical outputs; the
+20-test package suite passed. This is a planning-runtime result, not a
+production waveform or boundary-return validation, and it did not meet the
+10-minute performance goal. See the authoritative
+[Event 1 performance record](../../docs/two_chunk_planner_high_frequency_search.md).

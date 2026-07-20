@@ -14,7 +14,7 @@ from two_chunk_planner.errors import PlannerError
 from two_chunk_planner.io import Source, logical, number, parse_cmtsolution, parse_par_file, parse_station_csv, parse_stations, parse_target_region, parse_weights, write_json
 from two_chunk_planner.optimize import SearchSettings, resource_suggestions, search
 from two_chunk_planner.paths import geometry_paths, taup_paths
-from two_chunk_planner.plotting import write_map
+from two_chunk_planner.plotting import write_globe, write_map
 from two_chunk_planner.profile import canonical_profile
 from two_chunk_planner.transforms import EulerTransform
 
@@ -190,6 +190,7 @@ def run_plan(args) -> None:
     write_json(args.output / "boundary_time_audit.json", {**common, "analysis_window": args.analysis_window, "target_energy_end_s": args.target_energy_end_s, "analysis_end_s": analysis_end_s, "records": boundary_records, "global_status": "heuristic_not_conservative" if boundary else "unavailable", "hard_constraint_used": False, "boundary_time_production_safe": False, "taup_path_use": "forbidden"})
     write_json(args.output / "run_manifest.json", {"schema": "ulvz_two_chunk_planner_run.v1", **verification, "canonical_profile": profile, "source": asdict(source), "stations": [asdict(item) for item in stations], "path_mode": args.path_mode, "taup_model": args.taup_model if args.path_mode == "phase-aware" else None, "taup_resample": args.taup_resample if args.path_mode == "phase-aware" else None, "ray_param_tol": args.ray_param_tol if args.path_mode == "phase-aware" else None, "cmb_near_depth_tolerance_km": args.cmb_near_depth_tolerance_km if args.path_mode == "phase-aware" else None, "phase_inventory": phase_inventory, "weights": weights, "large_simulation_run": False, "formal_source_modified": False, "formal_build_rules_modified": False, "accepted_patch_modified": False, "commit_performed": False, "push_performed": False})
     write_map(args.output / "map.png", chosen_domain, source, stations, paths, target)
+    write_globe(args.output / "globe.png", chosen_domain, source, stations, paths, target)
     report = ["# Canonical two-chunk planning result", "", f"Returned feasible candidates: **{len(candidate_dicts)}** (maximum 5).", "", "## Scope", "", "This is a standalone, read-only canonical 90°×90° planner. It does not run mesher/database/solver and does not replace topology, Stacey, waveform, or production boundary-return validation.", "", "## Verification status", "", f"- planner mode: `{verification['planner_mode']}`", f"- compatibility profile: `{verification['compatibility_profile_version']}`", f"- Par_file source: `{verification['par_file_source']}`", "- SPECFEM source and accepted patch: **not verified by this planner**.", "", "## Search", "", f"Generated: {result.all_candidate_count}; deduplicated: {result.deduplicated_candidate_count}; feasible: {result.feasible_count}; rejected: {result.rejected_count}."]
     if not candidate_dicts:
         report.extend(["", "## No feasible candidate", "", *[f"- {reason}: {count}" for reason, count in result.rejection_summary.items()]])

@@ -19,7 +19,8 @@ Current verified planner-runtime facts:
 - geographiclib runtime was available; Pdiff and Sdiff `prem` geographic TauP
   paths passed the synthetic AB→AC smoke test;
 - date-line path splitting passed;
-- the full package test suite reports **17 passed**;
+- the full package test suite reports **20 passed**, including compact/full
+  scalar-reference, ordered keeper, and multi-orientation batch comparisons;
 - resample=false/true sampling is `indeterminate`, not a convergence claim:
   Pdiff length difference is 14.7813 km (0.130094%) and Sdiff difference is
   8.6426 km (0.076131%);
@@ -28,6 +29,18 @@ Current verified planner-runtime facts:
 - the synthetic fixture is not Kim/Song input;
 - classification is
   `canonical_geometry_planning_validated__waveform_and_boundary_production_validation_required`.
+
+## Event 1 runtime acceptance
+
+The preserved real Event 1 phase-aware case was completed twice by the current
+planner in the project's third-round acceptance. The runs finished in 12:31.62
+and 12:28.80 with exit status zero and strictly identical planner outputs.
+This is an end-to-end planning-runtime and reproducibility result only: it is
+about 32% faster than the prior approximately 18.5-minute run, does not reach
+the 10-minute target, and does not establish production waveform or boundary
+return validity. The old implementation has only a >1800 s timeout lower
+bound. See the project-level
+[performance record](../../../docs/two_chunk_planner_high_frequency_search.md).
 
 No statement above establishes production waveform accuracy, full 3-D boundary
 return safety, or support outside canonical 90°×90° AB+AC geometry.

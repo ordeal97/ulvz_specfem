@@ -6,7 +6,7 @@ import math
 from dataclasses import dataclass
 from functools import lru_cache
 
-from two_chunk_planner.geometry import DEG, Vec3, latlon_to_unit, normalize_longitude, unit_to_latlon
+from two_chunk_planner.geometry import DEG, Vec3, normalize_longitude
 
 # WGS84-like Earth value used by current SPECFEM Earth model constants.
 # The accepted fixture has ELLIPTICITY=.false.; ellipticity conversion remains
@@ -24,6 +24,21 @@ def geographic_latitude(colatitude_rad: float, ellipticity: bool) -> float:
     if ellipticity:
         colatitude_rad = math.atan(math.tan(colatitude_rad) / EARTH_ONE_MINUS_F_SQUARED)
     return math.degrees(math.pi / 2.0 - colatitude_rad)
+
+
+def geographic_to_global_vector(latitude_deg: float, longitude_deg: float, ellipticity: bool) -> Vec3:
+    """Return the geographic Cartesian vector used by ``geographic_to_local``.
+
+    The vector depends on the input point and ellipticity only, never on an
+    orientation.  Search code can therefore prepare it once per run while
+    retaining the exact matrix multiplication used by each candidate.
+    """
+    theta = geocentric_colatitude(latitude_deg, ellipticity)
+    return (
+        math.sin(theta) * math.cos(longitude_deg * DEG),
+        math.sin(theta) * math.sin(longitude_deg * DEG),
+        math.cos(theta),
+    )
 
 
 @dataclass(frozen=True)
@@ -54,9 +69,7 @@ class EulerTransform:
         return tuple(sum(matrix[row][column] * vector[row] for row in range(3)) for column in range(3))  # type: ignore[return-value]
 
     def geographic_to_local(self, latitude_deg: float, longitude_deg: float) -> Vec3:
-        theta = geocentric_colatitude(latitude_deg, self.ellipticity)
-        vector = (math.sin(theta) * math.cos(longitude_deg * DEG), math.sin(theta) * math.sin(longitude_deg * DEG), math.cos(theta))
-        return self.global_to_local(vector)
+        return self.global_to_local(geographic_to_global_vector(latitude_deg, longitude_deg, self.ellipticity))
 
     def local_to_geographic(self, vector: Vec3) -> tuple[float, float]:
         x, y, z = self.local_to_global(vector)
