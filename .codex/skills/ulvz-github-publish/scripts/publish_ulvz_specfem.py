@@ -39,6 +39,7 @@ RSYNC_FILTERS = [
     "--exclude=*token*",
     "--exclude=*password*",
     "--exclude=/note",
+    "--exclude=/chunkplanner.zip",
     "--exclude=/results",
     "--exclude=/+results",
     "--exclude=/specfem3d_globe/obj",

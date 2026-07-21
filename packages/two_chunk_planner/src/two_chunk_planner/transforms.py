@@ -22,7 +22,10 @@ def geocentric_colatitude(latitude_deg: float, ellipticity: bool) -> float:
 
 def geographic_latitude(colatitude_rad: float, ellipticity: bool) -> float:
     if ellipticity:
-        colatitude_rad = math.atan(math.tan(colatitude_rad) / EARTH_ONE_MINUS_F_SQUARED)
+        # tan(colatitude) alone loses the southern-hemisphere quadrant.
+        # atan2 preserves it, so a local point never becomes an impossible
+        # geographic latitude above 90° when ellipticity is enabled.
+        return math.degrees(math.atan2(math.cos(colatitude_rad), EARTH_ONE_MINUS_F_SQUARED * math.sin(colatitude_rad)))
     return math.degrees(math.pi / 2.0 - colatitude_rad)
 
 

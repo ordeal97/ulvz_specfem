@@ -2,7 +2,7 @@
 
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 
-## Standalone package status (v0.2.0)
+## Standalone package status (v0.2.1)
 
 The runtime uses only its bundled canonical profile and optional arbitrary
 Par_file. It does not read a project root, patch manifest, SPECFEM worktree, or
@@ -19,8 +19,12 @@ Current verified planner-runtime facts:
 - geographiclib runtime was available; Pdiff and Sdiff `prem` geographic TauP
   paths passed the synthetic AB→AC smoke test;
 - date-line path splitting passed;
-- the full package test suite reports **20 passed**, including compact/full
-  scalar-reference, ordered keeper, and multi-orientation batch comparisons;
+- the full package test suite reports **28 passed**, including compact/full
+  scalar-reference, ordered keeper, multi-orientation batch comparisons, and
+  ellipticity-aware north/south hemisphere round trips;
+- version 0.2.1 corrects the `ELLIPTICITY=.true.` local-to-geographic inverse
+  used by boundary audit and figures; it preserves the southern-hemisphere
+  quadrant and prevents impossible plotted latitudes above 90 degrees;
 - resample=false/true sampling is `indeterminate`, not a convergence claim:
   Pdiff length difference is 14.7813 km (0.130094%) and Sdiff difference is
   8.6426 km (0.076131%);

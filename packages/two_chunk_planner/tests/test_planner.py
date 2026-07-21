@@ -10,13 +10,13 @@ import pytest
 from two_chunk_planner.cli import main
 from two_chunk_planner.domain import CanonicalTwoChunkDomain
 from two_chunk_planner.errors import PlannerError
-from two_chunk_planner.geometry import angular_distance_deg, latlon_to_unit, split_dateline, unit_to_latlon
+from two_chunk_planner.geometry import angular_distance_deg, great_circle_samples, latlon_to_unit, split_dateline, unit_to_latlon
 from two_chunk_planner.io import Source, Station, parse_cmtsolution, parse_stations, parse_target_region, parse_weights
 from two_chunk_planner.objective import evaluate_geometry, evaluate_geometry_scalar_summary, evaluate_geometry_summaries, prepare_geometry_inputs
 from two_chunk_planner.optimize import SearchSettings, SearchTrace, _around, _grid, search
 from two_chunk_planner.paths import geometry_paths, taup_paths
 from two_chunk_planner.profile import canonical_profile
-from two_chunk_planner.transforms import EulerTransform
+from two_chunk_planner.transforms import EulerTransform, geocentric_colatitude, geographic_latitude, geographic_to_global_vector
 
 
 REPO = Path(__file__).resolve().parents[3]
@@ -34,6 +34,25 @@ def test_geographic_cartesian_round_trip():
     latitude, longitude = unit_to_latlon(point)
     assert latitude == pytest.approx(-23.2)
     assert longitude == pytest.approx(179.9)
+
+
+@pytest.mark.parametrize("latitude", (-89.9, -60.0, -23.2, 0.0, 23.2, 60.0, 89.9))
+def test_ellipticity_latitude_round_trip_preserves_hemisphere(latitude: float):
+    colatitude = geocentric_colatitude(latitude, True)
+    assert geographic_latitude(colatitude, True) == pytest.approx(latitude, abs=1.0e-12)
+
+
+def test_ellipticity_true_event1_outer_arcs_remain_geographic():
+    domain = CanonicalTwoChunkDomain(EulerTransform(50.5, -77.0, 225.5, ellipticity=True))
+    for arc in domain.external_boundaries:
+        global_points = [
+            domain.transform.local_to_global(point)
+            for point in great_circle_samples(arc.start_local, arc.end_local, 181)
+        ]
+        geographic_points = domain.global_arc(arc, 181)
+        assert all(-90.0 <= latitude <= 90.0 for latitude, _ in geographic_points)
+        for vector, (latitude, longitude) in zip(global_points, geographic_points):
+            assert geographic_to_global_vector(latitude, longitude, True) == pytest.approx(vector, abs=1.0e-12)
 
 
 def test_package_geometry_example_chunks_and_endpoints():

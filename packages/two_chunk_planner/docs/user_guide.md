@@ -1,6 +1,6 @@
 # Two-chunk planner / 双 chunk planner
 
-Version: package `0.2.0`; operational scope: the project's accepted canonical
+Version: package `0.2.1`; operational scope: the project's accepted canonical
 two-chunk geometry only.
 
 - [English user guide](user_guide_en.md)

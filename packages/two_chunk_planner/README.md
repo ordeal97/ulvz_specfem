@@ -7,7 +7,7 @@ manifest, or accepted-patch source hash. It never applies a patch, changes a
 `Par_file`, or runs mesher/database/solver programs.
 
 ```bash
-python -m pip install two_chunk_planner-0.2.0-py3-none-any.whl
+python -m pip install two_chunk_planner-0.2.1-py3-none-any.whl
 two-chunk-planner --help
 ```
 

@@ -10,9 +10,10 @@ PYTHONPATH=packages/two_chunk_planner/src "$PYTHON" \
   -m pytest packages/two_chunk_planner/tests -q
 ```
 
-Result: **20 passed** in the final third-round Event 1 acceptance.
+The final third-round Event 1 acceptance historically recorded **20 passed**.
+The current v0.2.1 suite records **28 passed**.
 
-The v0.2.0 suite additionally validates package-local profile loading,
+The v0.2.1 suite additionally validates package-local profile loading,
 no-project-root geometry planning, optional arbitrary `--par-file`, parser/CLI
 reference consistency, GPL package contents, and isolated wheel installation.
 
@@ -35,9 +36,8 @@ smoke evidence is retained in
 examples, standard output creation, and refusal to overwrite every example
 output directory. No dependency was installed.
 
-The real Event 1 performance/acceptance evidence is intentionally outside this
-package under
-`results/two_chunk_planner_high_frequency_search_20260720T111204Z_third_round/`.
+The real Event 1 performance/acceptance evidence is summarized in the
+[project performance record](../../docs/two_chunk_planner_high_frequency_search.md).
 Its persistent outputs and timing files are not produced by ordinary package
 tests or by `two-chunk-planner plan`.
 

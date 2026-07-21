@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # Canonical two-chunk planner user guide
 
-Version 0.2.0. `two_chunk_planner` is a completely standalone, read-only
+Version 0.2.1. `two_chunk_planner` is a completely standalone, read-only
 canonical two-chunk planning tool. After installation it runs from any
 directory and needs no ULVZ project, SPECFEM worktree, or patch manifest.
 
@@ -22,13 +22,13 @@ waveform, or production boundary-return acceptance.
 Install a supplied wheel from any directory:
 
 ```bash
-python -m pip install two_chunk_planner-0.2.0-py3-none-any.whl
+python -m pip install two_chunk_planner-0.2.1-py3-none-any.whl
 ```
 
 Install from a source distribution or source directory:
 
 ```bash
-python -m pip install two_chunk_planner-0.2.0.tar.gz
+python -m pip install two_chunk_planner-0.2.1.tar.gz
 python -m pip install .
 python -m pip install -e '.[phase-aware]'
 ```
@@ -94,8 +94,10 @@ tree, patch manifest, or source hash.
 
 The [English CLI reference](cli_reference_en.md) and
 [Chinese CLI reference](cli_reference_zh.md) are the complete, authoritative
-35-option list. Use them for TauP, target, search, scoring, NEX/MPI and output
-details; this guide explains only common workflow choices.
+35-option selection manuals. Each option states its purpose, requiredness,
+accepted values, default, use case, interactions, output effect, example and
+caveats. Use them for TauP, target, search, scoring, NEX/MPI and output details;
+this guide explains only common workflow choices.
 
 ## 5. Event-style phase-aware command
 

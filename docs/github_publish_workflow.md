@@ -70,6 +70,7 @@ rsync -a \
   --exclude='*token*' \
   --exclude='*password*' \
   --exclude=/note \
+  --exclude=/chunkplanner.zip \
   --exclude=/results \
   --exclude=/+results \
   --exclude=/specfem3d_globe/obj \
@@ -141,6 +142,8 @@ The synchronization command excludes:
 - `.env`, `.env.*`, `*.pem`, `*.key`, and names containing `secret`, `token`,
   or `password`: local secrets and credentials.
 - `note`: local scratch notes.
+- `chunkplanner.zip`: local package/archive snapshot; it can contain stale
+  source, validation images, and logs and is not a GitHub release artifact.
 - `results`: local simulation evidence, including large databases and waveform
   products. Summaries remain in project documentation and manifests.
 - `+results`: a local legacy results directory retained outside GitHub.

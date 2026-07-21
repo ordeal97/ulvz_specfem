@@ -1,6 +1,6 @@
 # ULVZ SPECFEM Project Status
 
-Last updated: 2026-07-16
+Last updated: 2026-07-21
 
 This file summarizes the current state of
 the project working tree. It is based on
@@ -936,3 +936,15 @@ batch path evaluation、60 次 keeper scalar review 共 352.17 s，以及约 203
 `results/two_chunk_planner_high_frequency_search_20260720T111204Z_third_round/`，详见
 `docs/two_chunk_planner_high_frequency_search.md`。未修改真实 DATA、SPECFEM source、
 build rules 或 accepted patch，未 commit/push。
+
+## 2026-07-21 two-chunk planner ellipticity plotting correction
+
+已修正 standalone `two_chunk_planner` 在 `ELLIPTICITY=.true.` 时由 geocentric
+colatitude 反算 geographic latitude 的象限错误。旧实现对南半球 colatitude 使用主值
+`atan(tan(...))`，可能把真实负纬度错误写为大于 90° 的数值，导致 `map.png` 外边界被
+纬度范围裁切为伪竖线。修复改用保留象限的 `atan2` 反变换；不改变 candidate 搜索、评分、
+TauP、资源建议或 canonical two-chunk 几何。package 更新为 0.2.1，并增加南北半球往返
+与真实 Event 1 orientation 六条 outer arc 的回归测试。未修改真实 DATA、SPECFEM source、
+build rules 或 accepted patch，未 commit/push。最新本地验证产物保留于
+`results/two_chunk_planner_ellipticity_fix_20260721T120452Z/`；该目录不作为 GitHub
+发布内容。

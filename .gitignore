@@ -50,6 +50,7 @@ task_4c_acceptance_artifacts/**
 
 # Local scratch notes
 note
+chunkplanner.zip
 
 # Large local simulation and planner-validation evidence is retained locally.
 results/
