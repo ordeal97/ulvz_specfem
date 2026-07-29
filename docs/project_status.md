@@ -1,6 +1,6 @@
 # ULVZ SPECFEM Project Status
 
-Last updated: 2026-07-21
+Last updated: 2026-07-29
 
 This file summarizes the current state of
 the project working tree. It is based on
@@ -28,13 +28,26 @@ resolution study.
 | Task 3D two-rank mesher validation | Implemented with fixture Par_file, shell harness, and independent Fortran inspector | Verified on preserved workdir `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444` | Latest report status is PASS with nonzero outside/taper/core coverage and residuals below tolerance |
 | Task 3E visualization export and static plotting | Implemented under `scripts/ulvz_mesh_viz/` with CSV/JSON schema `ulvz_mesh_viz.v1` | Verified on preserved fixture outputs and static figures in latest workdir | Default static plotting path is documented and tested to avoid PyVista, VTK, Cartopy, and Meshio imports |
 | Task 3F ParaView export | Diagnostic mesh exporters and final model exporter are implemented; final model path uses `solver_data.bin` arrays and `export_paraview_model.py`; `--full-mesh` exports `region=all` records with distinct `ulvz_full_model_*` names | implemented and verified on preserved real fixture `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_164822_183226`; latest combined diagnostic/model ParaView generation is `s40rts_ulvz_mesh_work_20260702_165805_185535`; latest full-mesh final model generation is `s40rts_ulvz_mesh_work_20260703_102747_261318` | Final model validation records readable VTP, both VTU rank pieces, PVTU, welded VTU, `vp/vs/rho`, TISO, and before/after ratio arrays, gzip-verified raw rank CSVs, km coordinates, field-aware split preservation, and zero negative/near-zero volumes |
+| Native SPECFEM ParaView reconnaissance | Completed as a new timestamped two-rank S40RTS+ULVZ experiment; no existing exporter was removed or changed | `SAVE_MESH_FILES` writes final TISO scalar bins; `xcombine_vol_data_vtu` successfully writes native res=1 GLL-subcell VTU and consumes test ratio arrays; AVS/DX surface and legacy VTK/.mesh were also tested | Recommendation **B**: native volume geometry/single-field writer is useful, but its first-value `iglob` merge demonstrably erases material-side discontinuities and it cannot natively calculate or combine ratios/multiple fields. See `docs/paraview_native_export_reconnaissance.md`. |
 | Task 4A/4B/4C reusable model post-processing | implemented and verified for `scripts/ulvz_model_postprocess/` with schema `ulvz_model_postprocess.v1`: CLI, schema, rank-local `.npy` store, synthetic workflows, comparison/plot/ParaView behavior, SPECFEM layout inspection, and Task 4C physical-field extraction for compatible local sequential reg1 databases | implemented and verified on preserved Task 3D `reference_disabled` and `ulvz_enabled` fixture databases in `task_4c_acceptance_artifacts/task_4c_real_fixture_acceptance_20260707T221100Z`: external `DATABASES_MPI` paths, full extraction, delayed comparison, static plots, VTP/PVTP and VTU/PVTU reopening, and Task 3D CSV consistency cross-check all passed; fresh regressions report `tests/ulvz_model_postprocess: 15 passed` and `tests/ulvz_mesh_viz: 26 passed` | Supported real workflow is limited to compatible `proc*_reg1_solver_data.bin` isotropic/TISO layouts. Production-scale and high-frequency validation remain unverified. Still unsupported: ADIOS/HDF5, non-reg1 extraction, full anisotropic mantle `cij`, standalone model-data paths, cross-mesh interpolation, true sub-rank record streaming, and arbitrary incompatible SPECFEM binary layouts |
 | Task 4E standalone model post-processing package | implemented and verified for `packages/ulvz_model_postprocess/`: copyable Python package, `ulvz-model-postprocess` console script, `python -m ulvz_model_postprocess`, standalone docs, tests, and bundled SPECFEM extractor extension | implemented and verified on the preserved Task 3D fixture through the standalone entry point with selected extraction, delayed comparison, static plot, and ParaView `both` export; package tests report `8 passed`; old `scripts.ulvz_model_postprocess` still works | Real raw `DATABASES_MPI` validation/extraction requires explicit compatible `--extractor`; production-scale/high-frequency validation remains unverified; unsupported layouts from Task 4C remain unsupported and no support for arbitrary incompatible SPECFEM outputs is claimed |
 | Two-chunk SPECFEM implementation and formal runtime continuation | The accepted project-local patch is documented at `patches/specfem3d_globe/two_chunk_endpoints/`; no production build rule changed | Fresh isolated NEX=96 patched/reversed/v8 builds completed. Patched 2/8/12-rank fingerprints match; topology has reciprocal C1/C2 two-member paths across three depths and no internal Stacey face. Reversed and clean v8 reproduce the historical `(0,1,0)` path. v3 waveform symmetry, fresh one-chunk, and rerun six-chunk regressions pass. | Current patch is formally accepted for the canonical 90° configuration: max NRMS `2.92e-6`, max relative energy difference `2.86e-6`; `canonical_90deg_fixture_ready=true`. General two-chunk classification remains B; Kim/Song Hawaiʻi production inputs remain incomplete. See `docs/two_chunk_waveform_symmetry_closure.md` and its result root. |
 | One-chunk Hawai'i/Yuan coverage audit | Source constraints, 90°–150° low-resolution width meshes, constructed-geometry search, short solver smoke, and a 20-minute solver duration run completed; no production source change | All five width meshes had positive Jacobians; final 135° source/station smoke completed with nonzero waveforms; long run completed 6500 steps | Hawai'i and individual Yuan geometry classifications are conditional on locally constructed inputs. The completed long run lacks an independent larger-domain/reference comparison to identify boundary reflections, so production-safe boundary windows remain unverified; see `docs/one_chunk_hawaii_yuan_analysis.md` |
 | One-chunk 135° boundary/domain validation | Independent 135° one-chunk and 6-chunk global meshes/runtimes, actual GLL-spacing comparison, 16 deep/shallow probes, a 120° sensitivity run, and complete-record post-processing completed; no production source change | Both 135° and global solvers completed 16,800 steps with all 17 receivers; 135° target-region spacing matches global within the recorded 15% criterion | Hawai'i remains B and `production_safe=false`. Complete-record diagnostics do not make one chunk globally equivalent: no science-window residual was uniquely attributable to a lateral boundary, probe returns are not uniquely separable, and the 120° test is spacing-confounded. See `docs/one_chunk_ulvz_simulation_assessment.md`, `docs/one_chunk_boundary_validation.md`, and timestamped results. |
+| Standalone post-run STF convolution package | `packages/ulvz_stf_convolution/` provides an installable Python API/CLI for two-column ASCII, optional ObsPy SAC, built-in Gaussian/triangle STF, and validated numerical moment-rate files | Package-level tests include deterministic comparison with the current standalone SPECFEM Fortran utility when source/compiler are present, plus SAC round-trip validation when ObsPy is present | This verifies tool behavior only, not a solver A/B equivalence. Modern Gaussian is area-normalized after finite truncation; `--mode fortran` intentionally preserves the legacy utility’s sampling and tail trimming. |
 
 ## Runtime Contract
+
+## Latest completed audit
+
+On 2026-07-28, a read-only audit of the current SPECFEM3D_GLOBE source tree
+and the existing `event1_2chunk` simulation examined the documented post-run
+source-time-function convolution workflow. The audit did not run mesher or
+solver, and did not alter waveforms. It confirms that the core standalone
+convolution source compiles in an isolated `/tmp` build, while the current
+wrapper scripts require adjustments or unavailable SAC dependencies; no
+solver-versus-postprocessing numerical equivalence is claimed. Full evidence:
+`docs/specfem3d_globe_postrun_stf_convolution_audit_20260728.md`.
 
 External S40RTS ULVZ parameter paths:
 
@@ -259,6 +272,17 @@ Evidence for implementation:
 - `docs/task_4c_specfem_solver_data_physical_field_extraction_plan.md`
 - `docs/ulvz_model_postprocessing_guide.md`
 - `docs/paraview_model_export_reconnaissance.md`
+- `docs/paraview_native_export_reconnaissance.md`
+
+Native-tool update (2026-07-21): a controlled `SAVE_MESH_FILES=.true.`
+fixture run proved that `save_model_meshfiles.f90` writes the final
+`rho/vpv/vph/vsv/vsh/eta` TISO arrays that `xcombine_vol_data_vtu` accepts.
+The native high-resolution output is a valid GLL-subcell volume mesh, but
+the combiner merges same-`iglob` material records and retains the first value.
+The fixture has large real shared-iglob material jumps, so it cannot replace
+the custom exporter’s field-aware splitting, multi-array PVTU, or
+element-local enabled/disabled ratios. The selected conclusion is B; the
+custom path remains authoritative.
 
 Supported by synthetic tests:
 

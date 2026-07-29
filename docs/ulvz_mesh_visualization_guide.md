@@ -238,6 +238,30 @@ edges of the linear GLL-subcell visualization written by this exporter. They
 are not a display of SPECFEM's continuous high-order spectral-element mapping
 between GLL nodes.
 
+### Native SPECFEM volume VTU: verified use and boundary
+
+The separate native-tool reconnaissance is documented in
+`docs/paraview_native_export_reconnaissance.md`. On the current branch,
+`SAVE_MESH_FILES=.true.` writes final `rho`, `vpv`, `vph`, `vsv`, `vsh`, and
+`eta` rank-local GLL arrays for this TISO fixture. They can be inspected with:
+
+```bash
+bin/xcombine_vol_data_vtu all vsv DATABASES_MPI DATABASES_MPI OUTDIR 1 1
+```
+
+Here `1` constructs linear GLL subcells (not a point cloud); `0` is one
+8-corner hex per spectral element and `2` is the intermediate stride-2 mesh.
+The program writes one PointData scalar array per single VTU, so every field
+requires a separate invocation. It does not calculate enabled/disabled ratios.
+
+Most importantly, the native combiner deduplicates rank-local `iglob` points
+and retains the first material value when element sides disagree. The real
+fixture contains such TISO discontinuities. Do not use native VTUs as the
+authoritative final-model visualization at interfaces, and do not merge their
+points in a postprocessor. Continue to use `export_paraview_model.py` for
+multi-field, ratio-bearing, field-aware-split PVTU/PVTP outputs. Native VTUs
+are useful as an independent same-side final-field and geometry check.
+
 ## 4. Quick-Start Workflow
 
 After generating the Task 3D reports, run:

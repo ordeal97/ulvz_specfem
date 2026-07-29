@@ -57,6 +57,9 @@ rsync -a \
   --exclude=.mpl \
   --exclude=__pycache__ \
   --exclude='*.py[cod]' \
+  --exclude=CMakeFiles \
+  --exclude=build \
+  --exclude='*.egg-info' \
   --exclude=.conda \
   --exclude=.venv \
   --exclude=venv \
@@ -136,6 +139,8 @@ The synchronization command excludes:
   excluded as local agent/tooling metadata.
 - `.pytest_cache`, `__pycache__`, and `*.py[cod]`: Python test and bytecode
   caches.
+- `CMakeFiles`, `build`, and `*.egg-info`: generated CMake metadata, package
+  build trees, and Python packaging metadata.
 - `.mpl`: local Matplotlib cache.
 - `.conda`, `.venv`, `venv`, `env`, and `conda-env`: local Python or Conda
   environments.

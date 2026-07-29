@@ -46,12 +46,11 @@ Do not infer physical parameters from convenience.
 
 ## Python environment
 
-  For ULVZ mesh visualization and test scripts, use:
+For ULVZ mesh visualization and test scripts, use the absolute Python interpreter unless the user says otherwise:
 
-  `$ULVZ_PYTHON` (set it to the project-managed Python interpreter).
+`/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python`
 
-  Do not rely on implicit `conda activate`. Use the absolute interpreter path in verification commands unless the
-  user says otherwise.
+Do not rely on implicit `conda activate`.
 
 
 

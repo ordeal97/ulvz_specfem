@@ -1,6 +1,6 @@
 program inspect_s40rts_ulvz_database
 
-  use constants, only: CUSTOM_REAL,SIZE_REAL,SIZE_DOUBLE,NGLLX,NGLLY,NGLLZ, &
+  use constants, only: CUSTOM_REAL,SIZE_REAL,SIZE_DOUBLE,MAX_STRING_LEN,NGLLX,NGLLY,NGLLZ, &
     EARTH_R,PI,GRAV,DEGREES_TO_RADIANS
   use shared_parameters, only: MODEL,MODEL_NAME,R_PLANET,RCMB,RHOAV, &
     TRANSVERSE_ISOTROPY,ANISOTROPIC_3D_MANTLE
@@ -206,6 +206,9 @@ contains
 
     if (export_paraview_model_enabled()) then
       call write_paraview_model_exports(disabled_dir,enabled_dir,report_dir,rplanet_km,rcmb_km,tiso_present)
+    endif
+    if (export_native_scalar_test_data_enabled()) then
+      call write_native_ratio_scalar_test_arrays(disabled_dir,enabled_dir)
     endif
 
     if (any(stats%category_count(:) == 0_8)) ok = .false.
@@ -684,6 +687,99 @@ contains
     export_paraview_model_enabled = .false.
     if (status == 0 .and. length > 0) export_paraview_model_enabled = (trim(value(1:length)) == '1')
   end function export_paraview_model_enabled
+
+  logical function export_native_scalar_test_data_enabled()
+    character(len=32) :: value
+    integer :: length,status
+
+    call get_environment_variable('EXPORT_NATIVE_SCALAR_TEST_DATA',value,length,status)
+    export_native_scalar_test_data_enabled = .false.
+    if (status == 0 .and. length > 0) export_native_scalar_test_data_enabled = (trim(value(1:length)) == '1')
+  end function export_native_scalar_test_data_enabled
+
+  subroutine write_native_ratio_scalar_test_arrays(disabled_dir,enabled_dir)
+    character(len=*), intent(in) :: disabled_dir,enabled_dir
+    type(solver_db) :: ref_db,ulvz_db
+    real(kind=CUSTOM_REAL), allocatable :: vp_ratio(:,:,:,:),vs_ratio(:,:,:,:),rho_ratio(:,:,:,:)
+    real(kind=CUSTOM_REAL), allocatable :: vpv_ratio(:,:,:,:),vph_ratio(:,:,:,:),vsv_ratio(:,:,:,:),vsh_ratio(:,:,:,:)
+    character(len=MAX_STRING_LEN) :: ref_file,ulvz_file,output_prefix
+    double precision :: ref_vp,ref_vs,ref_rho,ref_vpv,ref_vph,ref_vsv,ref_vsh,ref_eta
+    double precision :: vp,vs,rho,vpv,vph,vsv,vsh,eta
+    double precision :: ratio_vp,ratio_vs,ratio_rho,ratio_vpv,ratio_vph,ratio_vsv,ratio_vsh
+    integer :: iproc,ispec,i,j,k,iglob,ier
+
+    print *,'Writing project test-only native-compatible ratio scalar arrays; this is not SAVE_MESH_FILES output'
+    do iproc = 0,NPROCTOT_VAL - 1
+      call make_solver_filename(disabled_dir,iproc,ref_file)
+      call make_solver_filename(enabled_dir,iproc,ulvz_file)
+      call read_solver_database(trim(ref_file),ref_db,.true.)
+      call read_solver_database(trim(ulvz_file),ulvz_db,.true.)
+      call validate_paraview_model_pairing(iproc,ref_db,ulvz_db,R_PLANET / 1000.d0)
+
+      allocate(vp_ratio(NGLLX,NGLLY,NGLLZ,ulvz_db%nspec),vs_ratio(NGLLX,NGLLY,NGLLZ,ulvz_db%nspec), &
+               rho_ratio(NGLLX,NGLLY,NGLLZ,ulvz_db%nspec),vpv_ratio(NGLLX,NGLLY,NGLLZ,ulvz_db%nspec), &
+               vph_ratio(NGLLX,NGLLY,NGLLZ,ulvz_db%nspec),vsv_ratio(NGLLX,NGLLY,NGLLZ,ulvz_db%nspec), &
+               vsh_ratio(NGLLX,NGLLY,NGLLZ,ulvz_db%nspec),stat=ier)
+      if (ier /= 0) stop 'Unable to allocate project test ratio scalar arrays'
+
+      do ispec = 1,ulvz_db%nspec
+        do k = 1,NGLLZ
+          do j = 1,NGLLY
+            do i = 1,NGLLX
+              iglob = ulvz_db%ibool(i,j,k,ispec)
+              call final_model_values(ref_db,iproc,ispec,i,j,k,'disabled', &
+                ref_vp,ref_vs,ref_rho,ref_vpv,ref_vph,ref_vsv,ref_vsh,ref_eta)
+              call final_model_values(ulvz_db,iproc,ispec,i,j,k,'enabled',vp,vs,rho,vpv,vph,vsv,vsh,eta)
+              call compute_model_ratios(iproc,ispec,i,j,k,iglob, &
+                ref_vp,ref_vs,ref_rho,ref_vpv,ref_vph,ref_vsv,ref_vsh, &
+                vp,vs,rho,vpv,vph,vsv,vsh, &
+                ratio_vp,ratio_vs,ratio_rho,ratio_vpv,ratio_vph,ratio_vsv,ratio_vsh)
+              vp_ratio(i,j,k,ispec) = real(ratio_vp,kind=CUSTOM_REAL)
+              vs_ratio(i,j,k,ispec) = real(ratio_vs,kind=CUSTOM_REAL)
+              rho_ratio(i,j,k,ispec) = real(ratio_rho,kind=CUSTOM_REAL)
+              vpv_ratio(i,j,k,ispec) = real(ratio_vpv,kind=CUSTOM_REAL)
+              vph_ratio(i,j,k,ispec) = real(ratio_vph,kind=CUSTOM_REAL)
+              vsv_ratio(i,j,k,ispec) = real(ratio_vsv,kind=CUSTOM_REAL)
+              vsh_ratio(i,j,k,ispec) = real(ratio_vsh,kind=CUSTOM_REAL)
+            enddo
+          enddo
+        enddo
+      enddo
+
+      write(output_prefix,"(a,'/DATABASES_MPI/proc',i6.6,'_reg1_')") trim(enabled_dir),iproc
+      call write_test_ratio_scalar(trim(output_prefix)//'vp_ratio.bin',vp_ratio)
+      call write_test_ratio_scalar(trim(output_prefix)//'vs_ratio.bin',vs_ratio)
+      call write_test_ratio_scalar(trim(output_prefix)//'rho_ratio.bin',rho_ratio)
+      call write_test_ratio_scalar(trim(output_prefix)//'vpv_ratio.bin',vpv_ratio)
+      call write_test_ratio_scalar(trim(output_prefix)//'vph_ratio.bin',vph_ratio)
+      call write_test_ratio_scalar(trim(output_prefix)//'vsv_ratio.bin',vsv_ratio)
+      call write_test_ratio_scalar(trim(output_prefix)//'vsh_ratio.bin',vsh_ratio)
+
+      deallocate(vp_ratio,vs_ratio,rho_ratio,vpv_ratio,vph_ratio,vsv_ratio,vsh_ratio)
+      call free_solver_database(ref_db)
+      call free_solver_database(ulvz_db)
+    enddo
+  end subroutine write_native_ratio_scalar_test_arrays
+
+  subroutine write_test_ratio_scalar(filename,values)
+    character(len=*), intent(in) :: filename
+    real(kind=CUSTOM_REAL), intent(in) :: values(:,:,:,:)
+    integer :: unit,ier
+    logical :: exists
+
+    inquire(file=trim(filename),exist=exists)
+    if (exists) then
+      print *,'Refusing to overwrite existing scalar file: ',trim(filename)
+      stop 2
+    endif
+    open(newunit=unit,file=trim(filename),status='new',form='unformatted',action='write',iostat=ier)
+    if (ier /= 0) then
+      print *,'Unable to create project test ratio scalar file: ',trim(filename)
+      stop 2
+    endif
+    write(unit) values
+    close(unit)
+  end subroutine write_test_ratio_scalar
 
   subroutine write_paraview_model_exports(disabled_dir,enabled_dir,report_dir,rplanet_km,rcmb_km,tiso_present)
     character(len=*), intent(in) :: disabled_dir,enabled_dir,report_dir

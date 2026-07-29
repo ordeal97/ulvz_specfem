@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ulvz-stf-convolution"
+version = "0.1.0"
+description = "Standalone source-time-function convolution for SPECFEM base waveforms"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "GPL-3.0-or-later"
+authors = [{name = "ULVZ SPECFEM project"}]
+dependencies = ["numpy", "scipy"]
+
+[project.optional-dependencies]
+sac = ["obspy"]
+test = ["pytest", "obspy"]
+
+[project.scripts]
+ulvz-convolve-stf = "ulvz_stf_convolution.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
