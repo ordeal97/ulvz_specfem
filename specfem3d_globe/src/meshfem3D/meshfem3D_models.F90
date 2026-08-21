@@ -31,6 +31,7 @@
 
   use shared_parameters, only: LOCAL_PATH,SAVE_MESH_FILES,ADD_SCATTERING_PERTURBATIONS
   use meshfem_models_par
+  use model_ulvz_par, only: ulvz_initialize
 
   implicit none
 
@@ -64,6 +65,9 @@
 
   ! reads 1D reference models
   call meshfem3D_reference_model_broadcast()
+
+  ! Runtime CMB ULVZ parameters are parsed once and then broadcast to all ranks.
+  call ulvz_initialize()
 
   ! reads in 3D mantle models
   call meshfem3D_mantle_broadcast()
@@ -645,6 +649,7 @@
                                             ispec,i,j,k)
 
   use meshfem_models_par
+  use model_ulvz_par, only: ULVZ_BACKGROUND_FAMILY,ULVZ_FAMILY_PREM,ulvz_apply_prem_overlay
 
   implicit none
 
@@ -709,6 +714,10 @@
 !---
 
   if (iregion_code == IREGION_CRUST_MANTLE) then
+    if (ULVZ_BACKGROUND_FAMILY == ULVZ_FAMILY_PREM) then
+      call ulvz_apply_prem_overlay(r,theta,phi,rho,vpv,vph,vsv,vsh)
+    endif
+
     ! crust/mantle
     ! sets flag when mantle should not be extended to surface
     if (r_prem >= RMOHO/R_PLANET .and. .not. CRUSTAL) then
@@ -2240,5 +2249,3 @@
   deallocate(topo,tmp_x,tmp_y,tmp_z,ibool2D)
 
   end subroutine meshfem3D_plot_VTK_topo_bathy
-
-

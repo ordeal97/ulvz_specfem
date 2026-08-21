@@ -57,6 +57,19 @@
 
   module model_s40rts_par
 
+  use model_ulvz_par, only: &
+    S40RTS_ULVZ_ENABLED => ULVZ_ENABLED, &
+    S40RTS_ULVZ_CENTER_LATITUDE_DEGREES => ULVZ_CENTER_LATITUDE_DEGREES, &
+    S40RTS_ULVZ_CENTER_LONGITUDE_DEGREES => ULVZ_CENTER_LONGITUDE_DEGREES, &
+    S40RTS_ULVZ_THICKNESS_KM => ULVZ_THICKNESS_KM, &
+    S40RTS_ULVZ_LATERAL_RADIUS_KM => ULVZ_LATERAL_RADIUS_KM, &
+    S40RTS_ULVZ_LATERAL_TAPER_KM => ULVZ_LATERAL_TAPER_KM, &
+    S40RTS_ULVZ_TOP_TAPER_KM => ULVZ_TOP_TAPER_KM, &
+    S40RTS_ULVZ_DVS => ULVZ_DVS, S40RTS_ULVZ_DVP => ULVZ_DVP, &
+    S40RTS_ULVZ_DRHO => ULVZ_DRHO, &
+    S40RTS_ULVZ_CENTER_LATITUDE_RADIANS => ULVZ_CENTER_LATITUDE_RADIANS, &
+    S40RTS_ULVZ_CENTER_LONGITUDE_RADIANS => ULVZ_CENTER_LONGITUDE_RADIANS
+
   implicit none
 
   ! three_d_mantle_model_constants
@@ -74,20 +87,6 @@
   double precision,dimension(:,:),allocatable :: S40RTS_V_qq0
   double precision,dimension(:,:,:),allocatable :: S40RTS_V_qq
 
-  ! optional cylindrical-cap ULVZ overlay, enabled only for MODEL_NAME == 's40rts'
-  logical :: S40RTS_ULVZ_ENABLED = .false.
-  double precision :: S40RTS_ULVZ_CENTER_LATITUDE_DEGREES = 0.d0
-  double precision :: S40RTS_ULVZ_CENTER_LONGITUDE_DEGREES = 0.d0
-  double precision :: S40RTS_ULVZ_THICKNESS_KM = 0.d0
-  double precision :: S40RTS_ULVZ_LATERAL_RADIUS_KM = 0.d0
-  double precision :: S40RTS_ULVZ_LATERAL_TAPER_KM = 0.d0
-  double precision :: S40RTS_ULVZ_TOP_TAPER_KM = 0.d0
-  double precision :: S40RTS_ULVZ_DVS = 0.d0
-  double precision :: S40RTS_ULVZ_DVP = 0.d0
-  double precision :: S40RTS_ULVZ_DRHO = 0.d0
-  double precision :: S40RTS_ULVZ_CENTER_LATITUDE_RADIANS = 0.d0
-  double precision :: S40RTS_ULVZ_CENTER_LONGITUDE_RADIANS = 0.d0
-
   end module model_s40rts_par
 
 !
@@ -99,7 +98,6 @@
 ! standard routine to setup model
 
   use constants
-  use shared_parameters, only: MODEL_NAME
   use model_s40rts_par
 
   implicit none
@@ -134,11 +132,6 @@
   call bcast_all_dp(S40RTS_V_spknt,NK_20+1)
   call bcast_all_dp(S40RTS_V_qq0,(NK_20+1)*(NK_20+1))
   call bcast_all_dp(S40RTS_V_qq,3*(NK_20+1)*(NK_20+1))
-
-  if (trim(MODEL_NAME) == 's40rts') then
-    if (myrank == 0) call read_ulvz_s40rts_parameters()
-    call broadcast_ulvz_s40rts_parameters()
-  endif
 
   end subroutine model_s40rts_broadcast
 !
@@ -205,6 +198,7 @@
   use constants, only: EARTH_R
 
   use shared_parameters, only: MODEL_NAME
+  use model_ulvz_par, only: ulvz_apply_s40rts_overlay
 
   use model_s40rts_par
 
@@ -324,7 +318,7 @@
 
   endif
 
-  call s40rts_apply_ulvz_overlay(radius,theta,phi,dvs,dvp,drho)
+  call ulvz_apply_s40rts_overlay(radius,theta,phi,dvs,dvp,drho)
 
   end subroutine mantle_s40rts
 

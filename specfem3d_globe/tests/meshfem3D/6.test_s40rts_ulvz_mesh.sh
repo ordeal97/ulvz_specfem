@@ -91,7 +91,8 @@ run_mpi_mesher() {
 write_ulvz_file() {
   outfile=$1
   enabled=$2
-  cat > "$outfile" <<EOF
+cat > "$outfile" <<EOF
+BACKGROUND_MODEL = S40RTS
 ENABLED = $enabled
 CENTER_LATITUDE_DEGREES = 45.0
 CENTER_LONGITUDE_DEGREES = 140.0

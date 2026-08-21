@@ -40,6 +40,9 @@ def _fortran_convolution(waveform: Waveform, stf: SourceTimeFunction) -> Wavefor
         path=waveform.path,
         sac_trace=waveform.sac_trace,
         sac_reference_time=waveform.sac_reference_time,
+        asdf_dataset_path=waveform.asdf_dataset_path,
+        asdf_starttime_ns=waveform.asdf_starttime_ns,
+        asdf_dtype=waveform.asdf_dtype,
     )
 
 
@@ -72,12 +75,15 @@ def convolve_waveform(
         output[valid] = full[indices[valid]]
         output_times = waveform.times.copy()
     result = Waveform(
-        output_times,
-        output,
-        waveform.dt,
-        waveform.format,
-        waveform.path,
-        waveform.sac_trace,
-        waveform.sac_reference_time,
+        times=output_times,
+        amplitudes=output,
+        dt=waveform.dt,
+        format=waveform.format,
+        path=waveform.path,
+        sac_trace=waveform.sac_trace,
+        sac_reference_time=waveform.sac_reference_time,
+        asdf_dataset_path=waveform.asdf_dataset_path,
+        asdf_starttime_ns=waveform.asdf_starttime_ns,
+        asdf_dtype=waveform.asdf_dtype,
     )
     return ConvolutionResult(result, mode, selected, stf, tuple(stf.metadata.get("warnings", [])))

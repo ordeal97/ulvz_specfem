@@ -13,13 +13,40 @@ solver STF；再卷积会把两个 STF 相乘，而不是替换原来的 STF。
 从此目录单独安装：
 
 ```bash
-/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python -m pip install -e '.[sac,test]'
+/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python -m pip install -e '.[sac,asdf,test]'
 /import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python -m pytest -q
 ulvz-convolve-stf --help
 ```
 
-核心依赖是 NumPy 和 SciPy。SAC 是可选功能，依赖 ObsPy；若未安装 ObsPy，
-ASCII 和数值 STF 功能仍可用，SAC 操作会明确报错。
+核心依赖是 NumPy 和 SciPy。SAC 是可选功能，依赖 ObsPy；ASDF 是可选功能，
+依赖 h5py。若未安装相应 extra，ASCII 和数值 STF 功能仍可用，SAC/ASDF 操作
+会明确报错。
+
+## 不安装直接使用
+
+无需执行 `pip install`。在本 package 根目录运行时，将 `src` 加入
+`PYTHONPATH`，并通过模块入口调用：
+
+```bash
+cd /import/freenas-m-01-seismology/xjiang/ulvz_specfem/packages/ulvz_stf_convolution
+PYTHONPATH=src /import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python \
+  -m ulvz_stf_convolution --help
+```
+
+例如，直接处理单个 ASCII 波形：
+
+```bash
+cd /import/freenas-m-01-seismology/xjiang/ulvz_specfem/packages/ulvz_stf_convolution
+PYTHONPATH=src /import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python \
+  -m ulvz_stf_convolution \
+  --input OUTPUT_FILES/XX.STA..BHZ.sem.ascii \
+  --output results/XX.STA..BHZ.gaussian.sem.ascii \
+  --stf-kind gaussian --half-duration 3.1 --mode same
+```
+
+此方式不会生成安装后的 `ulvz-convolve-stf` 命令；请始终使用
+`python -m ulvz_stf_convolution`。运行环境仍须已有 NumPy 和 SciPy；使用 SAC
+输入或输出时还须已有 ObsPy，使用 ASDF 输入或输出时还须已有 h5py。
 
 ## 输入、输出与安全性
 
@@ -48,6 +75,27 @@ ulvz-convolve-stf --input OUTPUT_FILES/XX.STA..BHZ.sem.sac \
 SAC `same` 保持原绝对开始时间和 `b`。`full` 保留原 reference time，并以
 新输出的开始偏移更新 `b`；写出后工具会重新读取并核验 `starttime`、
 `b`、`e`、`delta`、`npts` 和数据。
+
+### SPECFEM ASDF 整文件输入/输出
+
+当 `Par_file` 启用 `OUTPUT_SEISMOS_ASDF = .true.` 时，SPECFEM 会写出
+`OUTPUT_FILES/synthetic.h5`。本包将该文件作为一个完整单位处理：读取
+`/Waveforms` 下全部台站和分量、逐条应用同一 STF，并写出新的完整 ASDF 文件。
+QuakeML、StationXML、AuxiliaryData、Provenance、根/组属性及其他非波形数据会从
+输入复制到输出；输入文件绝不会被修改。
+
+```bash
+ulvz-convolve-stf --input OUTPUT_FILES/synthetic.h5 \
+  --output results/synthetic.gaussian.h5 \
+  --input-format asdf --output-format asdf \
+  --stf-kind gaussian --half-duration 3.1 --mode same
+```
+
+ASDF `same` 保留每条 waveform 的 dataset 名称、`starttime` 和样点数。`full`
+及 `fortran` 若改变记录长度或起点，会同步更新 dataset 的 `starttime` 属性和
+SPECFEM waveform 名称中的起止时间（名称本身只有秒级精度，亚秒级变化以属性为准）。
+仅支持 SPECFEM `synthetic.h5` 的 ASDF 1.0
+`/Waveforms` 布局；不能与 ASCII/SAC 输入混合在同一命令中。
 
 ## 内置 STF 与兼容模式
 

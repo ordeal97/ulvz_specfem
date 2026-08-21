@@ -8,9 +8,10 @@ import json
 import sys
 from pathlib import Path
 
+from .asdf import read_asdf_waveforms, write_asdf_waveforms
 from .convolution import convolve_waveform
 from .errors import StfConvolutionError
-from .io import read_waveform, write_waveform
+from .io import _resolve_format, read_waveform, write_waveform
 from .stf import builtin_stf, fortran_compatible_stf, read_numeric_stf, resample_stf
 
 
@@ -18,8 +19,8 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ulvz-convolve-stf", description="Convolve a SPECFEM base waveform with a moment-rate STF.")
     parser.add_argument("--input", nargs="+", required=True, help="one or more waveform paths or quoted glob patterns")
     parser.add_argument("--output", required=True, help="output file for one input, or output directory for multiple inputs")
-    parser.add_argument("--input-format", choices=("auto", "ascii", "sac"), default="auto")
-    parser.add_argument("--output-format", choices=("auto", "ascii", "sac"), default="auto")
+    parser.add_argument("--input-format", choices=("auto", "ascii", "sac", "asdf"), default="auto")
+    parser.add_argument("--output-format", choices=("auto", "ascii", "sac", "asdf"), default="auto")
     parser.add_argument("--stf-kind", choices=("gaussian", "triangle", "numeric"), required=True)
     parser.add_argument("--half-duration", type=float)
     parser.add_argument("--stf-file")
@@ -53,7 +54,8 @@ def _inputs(patterns: list[str]) -> list[Path]:
 def _output_path(input_path: Path, output: Path, multiple: bool, output_format: str, input_format: str) -> Path:
     if not multiple:
         return output
-    suffix = ".sac" if output_format == "sac" or (output_format == "auto" and input_format == "sac") else input_path.suffix
+    selected = input_format if output_format == "auto" else output_format
+    suffix = {"sac": ".sac", "asdf": ".h5"}.get(selected, input_path.suffix)
     return output / f"{input_path.stem}.convolved{suffix}"
 
 
@@ -73,6 +75,48 @@ def _report_item(input_path: Path, output_path: Path, result) -> dict:
         "stf_metadata": result.stf.metadata,
         "warnings": list(result.warnings),
     }
+
+
+def _convolve_one(waveform, args):
+    if args.stf_kind == "numeric":
+        raw_stf = read_numeric_stf(args.stf_file, normalize=not args.no_normalize)
+        stf = resample_stf(raw_stf, waveform.dt, time_shift=args.stf_time_shift,
+                           allow_coarse_stf=args.allow_coarse_stf, normalize=not args.no_normalize)
+    elif args.mode == "fortran":
+        if args.stf_time_shift != 0.0:
+            raise StfConvolutionError("Fortran mode does not support STF time shifts")
+        stf = fortran_compatible_stf(args.stf_kind, args.half_duration, waveform.dt)
+    else:
+        raw_stf = builtin_stf(args.stf_kind, args.half_duration, waveform.dt, modern=True)
+        stf = resample_stf(raw_stf, waveform.dt, time_shift=args.stf_time_shift,
+                           allow_coarse_stf=args.allow_coarse_stf, normalize=False)
+    return convolve_waveform(waveform, stf, mode=args.mode, method=args.method)
+
+
+def _convolve_asdf(path: Path, destination: Path, args) -> dict:
+    traces = read_asdf_waveforms(path)
+    results = [_convolve_one(trace, args) for trace in traces]
+    report = {
+        "input": str(path),
+        "output": str(destination),
+        "format": "asdf",
+        "trace_count": len(results),
+        "input_npts": sum(len(trace.amplitudes) for trace in traces),
+        "output_npts": sum(len(result.waveform.amplitudes) for result in results),
+        "traces": [
+            {
+                "dataset": result.waveform.asdf_dataset_path,
+                "dt": result.waveform.dt,
+                "input_npts": len(trace.amplitudes),
+                "output_npts": len(result.waveform.amplitudes),
+                "method": result.method,
+            }
+            for trace, result in zip(traces, results, strict=True)
+        ],
+    }
+    if not args.dry_run:
+        write_asdf_waveforms(path, destination, [result.waveform for result in results], overwrite=args.overwrite)
+    return report
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -95,22 +139,25 @@ def main(argv: list[str] | None = None) -> int:
         output = Path(args.output)
         if len(paths) > 1 and output.suffix:
             raise StfConvolutionError("multiple inputs require --output to be a directory path")
+        input_formats = {_resolve_format(path, args.input_format) for path in paths}
+        if len(input_formats) != 1:
+            raise StfConvolutionError("a single invocation cannot mix ASDF, ASCII, and SAC inputs")
+        input_format = input_formats.pop()
+        if input_format == "asdf" and args.output_format not in {"auto", "asdf"}:
+            raise StfConvolutionError("ASDF input requires --output-format asdf (or auto)")
+        if input_format != "asdf" and args.output_format == "asdf":
+            raise StfConvolutionError("ASDF output requires ASDF input")
 
         reports = []
         for path in paths:
+            destination = _output_path(path, output, len(paths) > 1, args.output_format, input_format)
+            if input_format == "asdf":
+                report = _convolve_asdf(path, destination, args)
+                reports.append(report)
+                print(json.dumps(report, ensure_ascii=False, sort_keys=True), file=sys.stderr)
+                continue
             waveform = read_waveform(path, format=args.input_format)
-            if args.stf_kind == "numeric":
-                raw_stf = read_numeric_stf(args.stf_file, normalize=not args.no_normalize)
-                stf = resample_stf(raw_stf, waveform.dt, time_shift=args.stf_time_shift, allow_coarse_stf=args.allow_coarse_stf, normalize=not args.no_normalize)
-            elif args.mode == "fortran":
-                if args.stf_time_shift != 0.0:
-                    raise StfConvolutionError("Fortran mode does not support STF time shifts")
-                stf = fortran_compatible_stf(args.stf_kind, args.half_duration, waveform.dt)
-            else:
-                raw_stf = builtin_stf(args.stf_kind, args.half_duration, waveform.dt, modern=True)
-                stf = resample_stf(raw_stf, waveform.dt, time_shift=args.stf_time_shift, allow_coarse_stf=args.allow_coarse_stf, normalize=False)
-            result = convolve_waveform(waveform, stf, mode=args.mode, method=args.method)
-            destination = _output_path(path, output, len(paths) > 1, args.output_format, waveform.format)
+            result = _convolve_one(waveform, args)
             report = _report_item(path, destination, result)
             report["input_npts"] = len(waveform.amplitudes)
             reports.append(report)

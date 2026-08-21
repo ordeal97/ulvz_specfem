@@ -36,7 +36,18 @@ OBJECTS = \
 S40RTS_ULVZ_OBJECTS = \
 	$(OBJECTS) \
 	$O/lgndr.check.o \
+	$O/model_ulvz.check_module.o \
 	$O/model_s40rts.check.o \
+	$(EMPTY_MACRO)
+
+ULVZ_OBJECTS = \
+	$(OBJECTS) \
+	$O/model_ulvz.check_module.o \
+	$(EMPTY_MACRO)
+
+PREM_ULVZ_AUDIT_OBJECTS = \
+	$(ULVZ_OBJECTS) \
+	$O/model_prem.shared.o \
 	$(EMPTY_MACRO)
 
 test_models:
@@ -44,6 +55,12 @@ test_models:
 
 test_s40rts_ulvz:
 	${MPIFCCOMPILE_CHECK} ${FCFLAGS_f90} -o ./bin/test_s40rts_ulvz $(TEST_SRCDIR)/test_s40rts_ulvz.f90 -I./obj $(S40RTS_ULVZ_OBJECTS) $(MPILIBS)
+
+ulvz_parameter_failures:
+	${MPIFCCOMPILE_CHECK} ${FCFLAGS_f90} -o ./bin/test_ulvz_parameter_failures $(TEST_SRCDIR)/test_ulvz_parameter_failures.f90 -I./obj $(ULVZ_OBJECTS) $(MPILIBS)
+
+audit_prem_ulvz_materials:
+	${MPIFCCOMPILE_CHECK} ${FCFLAGS_f90} -o ./bin/audit_prem_ulvz_materials $(TEST_SRCDIR)/audit_prem_ulvz_materials.f90 -I./obj $(PREM_ULVZ_AUDIT_OBJECTS) $(MPILIBS)
 
 inspect_s40rts_ulvz_database:
 	${MPIFCCOMPILE_CHECK} ${FCFLAGS_f90} -o ./bin/inspect_s40rts_ulvz_database $(TEST_SRCDIR)/inspect_s40rts_ulvz_database.f90 -I./obj $(OBJECTS) $(MPILIBS)

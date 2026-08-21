@@ -76,6 +76,8 @@ rsync -a \
   --exclude=/chunkplanner.zip \
   --exclude=/results \
   --exclude=/+results \
+  --exclude=/specfem3d_globe/results \
+  --exclude=/packages/*.zip \
   --exclude=/specfem3d_globe/obj \
   --exclude=/specfem3d_globe/bin \
   --exclude=/specfem3d_globe/DATABASES_MPI \
@@ -152,6 +154,9 @@ The synchronization command excludes:
 - `results`: local simulation evidence, including large databases and waveform
   products. Summaries remain in project documentation and manifests.
 - `+results`: a local legacy results directory retained outside GitHub.
+- `specfem3d_globe/results`: nested local validation and simulation evidence.
+- `packages/*.zip`: local package/archive snapshots, which can be stale and are
+  not GitHub release artifacts.
 - `specfem3d_globe/obj`: SPECFEM object/build files.
 - `specfem3d_globe/bin`: SPECFEM compiled executables.
 - `specfem3d_globe/DATABASES_MPI` and `specfem3d_globe/OUTPUT_FILES`:

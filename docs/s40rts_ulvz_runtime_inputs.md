@@ -1,7 +1,7 @@
-# S40RTS ULVZ Runtime Inputs
+# PREM + S40RTS ULVZ Runtime Inputs
 
 This document records the parameters that are actually read by the current
-S40RTS ULVZ implementation. It is the runtime contract for the implemented
+PREM and S40RTS ULVZ implementation. It is the runtime contract for the implemented
 path, not a design proposal.
 
 ## Runtime File
@@ -18,14 +18,16 @@ The tracked template is:
 specfem3d_globe/DATA/ulvz_s40rts.par.example
 ```
 
-This file is read only when the parsed `MODEL_NAME` is exactly `s40rts`.
-`s40rts_paper` does not read or apply this external ULVZ overlay.
+When this file is present it is parsed for every model family and then audited
+against parsed `MODEL_NAME`. Native PREM may omit the file entirely.
+`s40rts_paper` and every unsupported background fail if the file is present.
 
 ## Implemented Keys
 
 The current parser requires exactly these keys:
 
 ```text
+BACKGROUND_MODEL
 ENABLED
 CENTER_LATITUDE_DEGREES
 CENTER_LONGITUDE_DEGREES
@@ -40,6 +42,12 @@ DRHO
 
 Unknown keys, duplicate keys, malformed lines, and missing keys are errors.
 Extra YAML-style fields are not ignored.
+
+`BACKGROUND_MODEL` is required and accepts only `PREM` or `S40RTS`. It must
+match the parsed `MODEL_NAME`: the supported PREM forms are
+`1d_isotropic_prem` and `1d_transversely_isotropic_prem`; S40RTS is parsed
+`s40rts` (including its existing suffix reduction). This audit runs even when
+`ENABLED = .false.`.
 
 ## Current Geometry And Taper
 
@@ -61,8 +69,8 @@ taper below the CMB; points below the CMB receive zero ULVZ weight.
 
 ## Current Perturbation Convention
 
-`DVS`, `DVP`, and `DRHO` are fractional perturbations applied relative to the
-local native S40RTS background:
+For S40RTS, `DVS`, `DVP`, and `DRHO` are fractional perturbations applied
+relative to the local native S40RTS background:
 
 ```text
 d_return = (1 + d_s40rts) * (1 + w * d_ulvz) - 1
@@ -71,6 +79,11 @@ d_return = (1 + d_s40rts) * (1 + w * d_ulvz) - 1
 where `w` is the implemented taper weight. In the current transverse-isotropic
 S40RTS database validation, `DVS` is applied consistently to `vsv/vsh`, `DVP`
 to `vpv/vph`, and `DRHO` to density.
+
+For PREM, the base `rho/vpv/vph/vsv/vsh/eta` is first generated unchanged.
+At mantle-side points with `w > 0`, the overlay applies
+`rho *= 1+w*DRHO`, `vpv/vph *= 1+w*DVP`, and `vsv/vsh *= 1+w*DVS`; `eta`
+is not changed.
 
 ## Not Implemented From YAML Design
 

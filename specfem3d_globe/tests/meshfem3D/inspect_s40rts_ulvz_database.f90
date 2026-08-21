@@ -352,7 +352,12 @@ contains
               rplanet_km,rcmb_km,w,height,lateral)
             if (height <= GEOMETRY_TOL_KM) then
               stats%cmb_boundary_noncomparable = stats%cmb_boundary_noncomparable + 1_8
-              w = 0.d0
+              if (skip_cmb_boundary()) cycle
+              if (include_cmb_boundary()) then
+                w = lateral_weight_at_cmb(lateral)
+              else
+                w = 0.d0
+              endif
             endif
             category = weight_category(w)
             stats%category_count(category) = stats%category_count(category) + 1_8
@@ -430,9 +435,18 @@ contains
             iglob = ref_db%ibool(i,j,k,ispec)
             call analytical_weight(dble(ref_db%x(iglob)),dble(ref_db%y(iglob)), &
               dble(ref_db%z(iglob)),rplanet_km,rcmb_km,w,height,lateral)
+            if (cmb_snap_tolerance_km() > 0.d0 .and. dabs(height) <= cmb_snap_tolerance_km()) then
+              height = 0.d0
+              w = lateral_weight_at_cmb(lateral)
+            endif
             if (height <= GEOMETRY_TOL_KM) then
               stats%cmb_boundary_noncomparable = stats%cmb_boundary_noncomparable + 1_8
-              w = 0.d0
+              if (skip_cmb_boundary()) cycle
+              if (include_cmb_boundary()) then
+                w = lateral_weight_at_cmb(lateral)
+              else
+                w = 0.d0
+              endif
             endif
             category = weight_category(w)
             stats%category_count(category) = stats%category_count(category) + 1_8
@@ -486,6 +500,49 @@ contains
       enddo
     enddo
   end subroutine compare_materials
+
+  logical function include_cmb_boundary()
+    character(len=32) :: value
+    integer :: length,status
+
+    value = ''
+    call get_environment_variable('ULVZ_COMPARE_INCLUDE_CMB',value,length,status)
+    include_cmb_boundary = status == 0 .and. length > 0 .and. trim(value(1:length)) == '1'
+  end function include_cmb_boundary
+
+  logical function skip_cmb_boundary()
+    character(len=32) :: value
+    integer :: length,status
+
+    value = ''
+    call get_environment_variable('ULVZ_COMPARE_SKIP_CMB',value,length,status)
+    skip_cmb_boundary = status == 0 .and. length > 0 .and. trim(value(1:length)) == '1'
+  end function skip_cmb_boundary
+
+  double precision function cmb_snap_tolerance_km()
+    character(len=32) :: value
+    integer :: length,status,ier
+
+    value = ''
+    cmb_snap_tolerance_km = 0.d0
+    call get_environment_variable('ULVZ_COMPARE_CMB_SNAP_KM',value,length,status)
+    if (status == 0 .and. length > 0) read(value(1:length),*,iostat=ier) cmb_snap_tolerance_km
+    if (cmb_snap_tolerance_km < 0.d0) cmb_snap_tolerance_km = 0.d0
+  end function cmb_snap_tolerance_km
+
+  double precision function lateral_weight_at_cmb(lateral)
+    double precision, intent(in) :: lateral
+    double precision :: x
+
+    lateral_weight_at_cmb = 0.d0
+    if (lateral > LATERAL_RADIUS_KM) return
+    if (LATERAL_TAPER_KM == 0.d0 .or. lateral <= LATERAL_RADIUS_KM - LATERAL_TAPER_KM) then
+      lateral_weight_at_cmb = 1.d0
+    else
+      x = (lateral - (LATERAL_RADIUS_KM - LATERAL_TAPER_KM)) / LATERAL_TAPER_KM
+      lateral_weight_at_cmb = 0.5d0 * (1.d0 + dcos(PI * x))
+    endif
+  end function lateral_weight_at_cmb
 
   subroutine require_positive(value,name)
     double precision, intent(in) :: value

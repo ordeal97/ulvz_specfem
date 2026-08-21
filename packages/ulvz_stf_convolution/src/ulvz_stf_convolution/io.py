@@ -24,11 +24,15 @@ def infer_dt(times: np.ndarray) -> float:
 
 
 def _resolve_format(path: Path, requested: str) -> str:
-    if requested not in {"auto", "ascii", "sac"}:
-        raise StfConvolutionError("format must be auto, ascii, or sac")
+    if requested not in {"auto", "ascii", "sac", "asdf"}:
+        raise StfConvolutionError("format must be auto, ascii, sac, or asdf")
     if requested != "auto":
         return requested
-    return "sac" if path.suffix.lower() == ".sac" else "ascii"
+    if path.suffix.lower() == ".sac":
+        return "sac"
+    if path.suffix.lower() in {".h5", ".asdf"}:
+        return "asdf"
+    return "ascii"
 
 
 def _obspy():
@@ -42,6 +46,8 @@ def _obspy():
 def read_waveform(path: str | Path, *, format: str = "auto") -> Waveform:
     source = Path(path)
     selected = _resolve_format(source, format)
+    if selected == "asdf":
+        raise StfConvolutionError("ASDF is a whole-file format; use read_asdf_waveforms or the CLI")
     if selected == "ascii":
         try:
             table = np.loadtxt(source, dtype=float, ndmin=2)
@@ -103,6 +109,8 @@ def _write_sac(waveform: Waveform, destination: Path) -> None:
 def write_waveform(waveform: Waveform, path: str | Path, *, format: str = "auto", overwrite: bool = False) -> Path:
     destination = Path(path)
     selected = _resolve_format(destination, format if format != "auto" else waveform.format)
+    if selected == "asdf":
+        raise StfConvolutionError("ASDF is a whole-file format; use write_asdf_waveforms or the CLI")
     if waveform.path is not None and destination.resolve() == waveform.path.resolve():
         raise StfConvolutionError("refusing to write output over the input waveform")
     if destination.exists() and not overwrite:

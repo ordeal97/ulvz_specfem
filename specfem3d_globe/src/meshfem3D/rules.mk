@@ -113,6 +113,7 @@ meshfem3D_MESHER_OBJECTS = \
 	$O/model_jp3d.check.o \
 	$O/model_ppm.check.o \
 	$O/model_s20rts.check.o \
+	$O/model_ulvz.check_module.o \
 	$O/model_s40rts.check.o \
 	$O/model_s362ani.check.o \
 	$O/model_scattering.check.o \
@@ -182,6 +183,7 @@ meshfem3D_MODULES = \
 	$(FC_MODDIR)/model_jp3d_par.$(FC_MODEXT) \
 	$(FC_MODDIR)/model_ppm_par.$(FC_MODEXT) \
 	$(FC_MODDIR)/model_s20rts_par.$(FC_MODEXT) \
+	$(FC_MODDIR)/model_ulvz_par.$(FC_MODEXT) \
 	$(FC_MODDIR)/model_s362ani_par.$(FC_MODEXT) \
 	$(FC_MODDIR)/model_s40rts_par.$(FC_MODEXT) \
 	$(FC_MODDIR)/model_scattering_par.$(FC_MODEXT) \
@@ -366,7 +368,8 @@ $O/model_attenuation.check.o: \
 	$(EMPTY_MACRO)
 
 $O/meshfem3D_par.check_module.o: $O/adios_manager.shared_adios_module.o
-$O/meshfem3D_models.check.o: $O/model_prem.shared.o
+$O/meshfem3D_models.check.o: $O/model_prem.shared.o $O/model_ulvz.check_module.o
+$O/model_s40rts.check.o: $O/model_ulvz.check_module.o
 $O/model_atten3D_QRFSI12.check.o: $O/model_prem.shared.o
 
 # Version file
@@ -410,4 +413,3 @@ $O/%.check_adios.o: $S/%.F90 $O/shared_par.shared_module.o $O/meshfem3D_par.chec
 
 $O/%.checknetcdf.o: $S/%.f90 $O/shared_par.shared_module.o $O/meshfem3D_par.check_module.o
 	${FCCOMPILE_CHECK} ${FCFLAGS_f90} $(NETCDF_INCLUDE) -c -o $@ $<
-

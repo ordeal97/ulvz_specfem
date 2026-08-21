@@ -3,8 +3,8 @@
 This repository contains a SPECFEM3D_GLOBE-based workflow for studying
 synthetic ultralow-velocity zones (ULVZs) near the core-mantle boundary.
 
-The current implementation focuses on an external, runtime-configured ULVZ
-overlay for the S40RTS mantle model, plus lightweight validation and
+The current implementation provides an external, runtime-configured CMB ULVZ
+overlay for PREM and S40RTS backgrounds, plus lightweight validation and
 visualization tooling. The preserved validation fixture is for implementation
 testing only; it is not a production waveform-resolution mesh.
 
@@ -62,6 +62,7 @@ specfem3d_globe/DATA/ulvz_s40rts.par.example
 Required parameter keys are:
 
 ```text
+BACKGROUND_MODEL
 ENABLED
 CENTER_LATITUDE_DEGREES
 CENTER_LONGITUDE_DEGREES
@@ -74,16 +75,26 @@ DVP
 DRHO
 ```
 
-The implemented perturbation combination is local-native-S40RTS-relative:
+`Par_file: MODEL` chooses the actual background. `BACKGROUND_MODEL` is a
+required audit field and must be `PREM` for `1d_isotropic_prem` or
+`1d_transversely_isotropic_prem`, and `S40RTS` for parsed `s40rts`; mismatch,
+unknown family, duplicate, missing, or unknown key is a hard error even when
+`ENABLED = .false.`. Native PREM remains valid without a ULVZ file.
+
+For S40RTS, the implemented perturbation combination is
+local-native-S40RTS-relative:
 
 ```text
 d_return = (1 + d_s40rts) * (1 + w * d_ulvz) - 1
 ```
 
-The overlay is enabled only when parsed `MODEL_NAME == 's40rts'`. Compatible
-raw `MODEL` suffix forms that reduce to `s40rts`, such as
-`s40rts_crust1.0_AIC`, enter the overlay path. `s40rts_paper` does not read,
-broadcast, or apply the ULVZ overlay.
+For PREM, after the complete base material is created, the mantle-side GLL
+components use `rho *= 1+w*DRHO`, `vpv/vph *= 1+w*DVP`, and
+`vsv/vsh *= 1+w*DVS`; `eta` is unchanged. `s40rts_paper` and all other
+unsupported backgrounds reject a present ULVZ parameter file.
+
+Minimal examples are `BACKGROUND_MODEL = S40RTS` with `MODEL = s40rts`, or
+`BACKGROUND_MODEL = PREM` with `MODEL = 1d_transversely_isotropic_prem`.
 
 ## Verification
 

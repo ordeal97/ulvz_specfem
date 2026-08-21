@@ -18,6 +18,9 @@ class Waveform:
     path: Path | None = None
     sac_trace: Any | None = None
     sac_reference_time: Any | None = None
+    asdf_dataset_path: str | None = None
+    asdf_starttime_ns: int | None = None
+    asdf_dtype: Any | None = None
 
 
 @dataclass(frozen=True)

@@ -1,6 +1,6 @@
 # ULVZ SPECFEM Project Status
 
-Last updated: 2026-07-29
+Last updated: 2026-08-21
 
 This file summarizes the current state of
 the project working tree. It is based on
@@ -15,7 +15,7 @@ scientific assumptions, separated background and perturbation cases,
 machine-readable ULVZ records, copied parameter files in every run directory,
 and recorded provenance.
 
-The implemented path in this workspace is a source-level S40RTS overlay
+The implemented path in this workspace is a source-level PREM/S40RTS overlay
 controlled by an external runtime parameter file. The lightweight validation
 fixture verifies implementation behavior; it is not a production waveform
 resolution study.
@@ -23,6 +23,9 @@ resolution study.
 ## Status At A Glance
 
 | Task | Implementation status | Real-fixture verification status | Key evidence or limitation |
+| PREM + ULVZ and S40RTS regression protection | Shared runtime component in `model_ulvz.f90`; strict `BACKGROUND_MODEL` audit; PREM isotropic/TISO material overlay; original S40RTS multiplication retained | Two-rank fixtures under `results/prem_ulvz_s40rts_regression_20260818/`: S40RTS old/new disabled and enabled databases are byte-for-byte equal for both ranks; native PREM and disabled PREM are byte-for-byte equal. Supplemental material audit `results/prem_ulvz_material_validation_20260818T142847Z/` passes 23/23 selected PREM rows and a full stored TISO-GLL comparison outside the shared CMB interface. | Existing `s40rts_ulvz_mesh_work_*` directories are historical and lack required `BACKGROUND_MODEL`; never rerun them directly with the new binary—migrate into a new case directory and record provenance. |
+| PREM + ULVZ low-resolution full-wave A/B validation | New isolated NEX32, one-rank, 135-degree one-chunk PREM-TISO A/B run; only `ENABLED` differs; pilot-selected common `DT=0.117 s` | `results/prem_ulvz_fullwave_validation_20260818T152800Z/`: both mesher/solver runs ended normally at 15,600 steps with 9 paired raw ASCII traces; checksum audit passes; raw TauP/PREM-window metrics and figures are saved | This only validates the low-resolution mesher-to-synthetic A/B path. The far full-record difference energy slightly exceeds near/through and is flagged, so physical path separation is not accepted; no production-resolution, boundary-free, or observational-fit conclusion. |
+| PREM + ULVZ full-wave path diagnosis | New read-only geometric and phase-window diagnosis; no solver/mesher rerun and no production-source modification | `results/prem_ulvz_fullwave_path_diagnosis_20260818T181200Z/` recomputes CMB corridor proxies with the same 3480-km CMB radius used in `model_ulvz.f90`; all nine A/B traces have non-overlapping energy decompositions that sum to one | The original `far` label used 6371-km scaling and is not code-consistent: FW01/FW02 are core-crossing proxies, FW03 is outside but only 173 km beyond the cap. FW03-MXN drives the small full-record reversal mainly between Pdiff/Sdiff and in the tail; Sdiff/late window averages are lower outside than core. Three stations do not establish physical locality statistically, and no output-only evidence requires a `model_ulvz.f90` change. |
 | --- | --- | --- | --- |
 | Task 3C S40RTS ULVZ overlay | Implemented in `specfem3d_globe/src/meshfem3D/model_s40rts.f90`; example parameter file and test target present | Verified by `5.test_s40rts_ulvz.sh`; `results.log` records `test_s40rts_ulvz done successfully` | Overlay is enabled only for parsed `MODEL_NAME == 's40rts'`; `s40rts_paper` is explicitly excluded |
 | Task 3D two-rank mesher validation | Implemented with fixture Par_file, shell harness, and independent Fortran inspector | Verified on preserved workdir `specfem3d_globe/tests/meshfem3D/s40rts_ulvz_mesh_work_20260702_145132_161444` | Latest report status is PASS with nonzero outside/taper/core coverage and residuals below tolerance |
@@ -34,7 +37,7 @@ resolution study.
 | Two-chunk SPECFEM implementation and formal runtime continuation | The accepted project-local patch is documented at `patches/specfem3d_globe/two_chunk_endpoints/`; no production build rule changed | Fresh isolated NEX=96 patched/reversed/v8 builds completed. Patched 2/8/12-rank fingerprints match; topology has reciprocal C1/C2 two-member paths across three depths and no internal Stacey face. Reversed and clean v8 reproduce the historical `(0,1,0)` path. v3 waveform symmetry, fresh one-chunk, and rerun six-chunk regressions pass. | Current patch is formally accepted for the canonical 90° configuration: max NRMS `2.92e-6`, max relative energy difference `2.86e-6`; `canonical_90deg_fixture_ready=true`. General two-chunk classification remains B; Kim/Song Hawaiʻi production inputs remain incomplete. See `docs/two_chunk_waveform_symmetry_closure.md` and its result root. |
 | One-chunk Hawai'i/Yuan coverage audit | Source constraints, 90°–150° low-resolution width meshes, constructed-geometry search, short solver smoke, and a 20-minute solver duration run completed; no production source change | All five width meshes had positive Jacobians; final 135° source/station smoke completed with nonzero waveforms; long run completed 6500 steps | Hawai'i and individual Yuan geometry classifications are conditional on locally constructed inputs. The completed long run lacks an independent larger-domain/reference comparison to identify boundary reflections, so production-safe boundary windows remain unverified; see `docs/one_chunk_hawaii_yuan_analysis.md` |
 | One-chunk 135° boundary/domain validation | Independent 135° one-chunk and 6-chunk global meshes/runtimes, actual GLL-spacing comparison, 16 deep/shallow probes, a 120° sensitivity run, and complete-record post-processing completed; no production source change | Both 135° and global solvers completed 16,800 steps with all 17 receivers; 135° target-region spacing matches global within the recorded 15% criterion | Hawai'i remains B and `production_safe=false`. Complete-record diagnostics do not make one chunk globally equivalent: no science-window residual was uniquely attributable to a lateral boundary, probe returns are not uniquely separable, and the 120° test is spacing-confounded. See `docs/one_chunk_ulvz_simulation_assessment.md`, `docs/one_chunk_boundary_validation.md`, and timestamped results. |
-| Standalone post-run STF convolution package | `packages/ulvz_stf_convolution/` provides an installable Python API/CLI for two-column ASCII, optional ObsPy SAC, built-in Gaussian/triangle STF, and validated numerical moment-rate files | Package-level tests include deterministic comparison with the current standalone SPECFEM Fortran utility when source/compiler are present, plus SAC round-trip validation when ObsPy is present | This verifies tool behavior only, not a solver A/B equivalence. Modern Gaussian is area-normalized after finite truncation; `--mode fortran` intentionally preserves the legacy utility’s sampling and tail trimming. |
+| Standalone post-run STF convolution package | implemented but not yet verified on a real fixture: v0.2.0 provides two-column ASCII, optional ObsPy SAC, and optional h5py whole-file SPECFEM ASDF (`synthetic.h5`) input/output, plus built-in and numerical STFs | The project interpreter ran all package tests: `18 passed, 2 skipped`; ASDF tests use an in-test synthetic multi-component SPECFEM-layout fixture, not a preserved solver `synthetic.h5` | Key implementation evidence: `packages/ulvz_stf_convolution/tests/test_asdf_io.py`. Validate a preserved `OUTPUT_FILES/synthetic.h5` with an independent ASDF reader before claiming real-fixture compatibility; this does not establish solver A/B equivalence. |
 
 ## Runtime Contract
 
@@ -61,6 +64,7 @@ External S40RTS ULVZ parameter paths:
 Required keys:
 
 ```text
+BACKGROUND_MODEL
 ENABLED
 CENTER_LATITUDE_DEGREES
 CENTER_LONGITUDE_DEGREES
@@ -79,11 +83,10 @@ The implemented perturbation combination is local-native-S40RTS-relative:
 d_return = (1 + d_s40rts) * (1 + w * d_ulvz) - 1
 ```
 
-Parsed `MODEL_NAME == 's40rts'` enables reading, validating, broadcasting, and
-applying the overlay. Compatible raw `MODEL` suffix forms that reduce to
-`MODEL_NAME == 's40rts'`, such as `s40rts_crust1.0_AIC`, enter the overlay
-path. `s40rts_paper` keeps `MODEL_NAME == 's40rts_paper'` and does not read,
-broadcast, or apply the ULVZ overlay.
+`BACKGROUND_MODEL` must be `S40RTS` for parsed `s40rts` or `PREM` for either
+supported PREM model form. It is an audit guard, not a model selector; the
+actual background always comes from `Par_file: MODEL`. Unsupported models,
+including `s40rts_paper`, reject a present ULVZ runtime file.
 
 The Task 3D fixture ULVZ is:
 
@@ -972,3 +975,22 @@ TauP、资源建议或 canonical two-chunk 几何。package 更新为 0.2.1，�
 build rules 或 accepted patch，未 commit/push。最新本地验证产物保留于
 `results/two_chunk_planner_ellipticity_fix_20260721T120452Z/`；该目录不作为 GitHub
 发布内容。
+
+## 2026-08-21 SPECFEM ASDF STF convolution support
+
+独立包 `packages/ulvz_stf_convolution/` 已新增对 SPECFEM
+`OUTPUT_SEISMOS_ASDF=.true.` 所写 `synthetic.h5` 的整文件波形读写与 STF 批处理。
+它读取 `/Waveforms` 的全部 trace，复制 ASDF 中 QuakeML、StationXML、AuxiliaryData、
+Provenance 与其他非波形内容，并仅在新输出文件中替换卷积后的波形；绝不覆盖输入。
+`same` 保留 waveform dataset 名称和绝对起始时间；`full`/`fortran` 在记录长度或起点
+改变时更新 `starttime`，并按 SPECFEM 名称的秒级精度重建 dataset 时间段（亚秒级变化以
+属性为准）。功能以可选 `h5py` extra 提供，不引入 `pyasdf`，ASCII/SAC 接口保持不变。
+
+该工作流为 **implemented but not yet verified on a real fixture**。合成 SPECFEM
+ASDF fixture 覆盖多分量读取、same/full/fortran 写出、非波形内容保留、输入不变、dry-run
+和非标准命名拒绝。2026-08-21 使用
+`/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python`
+运行 `PYTHONPATH=src python -m pytest -q`，结果为 `18 passed, 2 skipped`；该解释器的
+`h5py=3.16.0`。尚未以保存的真实 SPECFEM `OUTPUT_FILES/synthetic.h5` 运行端到端写出及
+独立 ASDF-reader 回读验证，因此不能据此声明真实 ASDF fixture 兼容性或 solver A/B 等价性。
+未运行 mesher/solver，未修改 SPECFEM Fortran 源码、build rules 或 ULVZ 实现，未 commit/push。
