@@ -6,6 +6,8 @@ import pytest
 from ulvz_stf_convolution.cli import main
 from ulvz_stf_convolution.convolution import convolve_waveform
 from ulvz_stf_convolution.io import read_waveform, write_waveform
+from ulvz_stf_convolution.errors import StfConvolutionError
+from ulvz_stf_convolution.phase_arrivals import load_input_annotation
 from ulvz_stf_convolution.stf import builtin_stf
 
 
@@ -68,3 +70,10 @@ def test_sac_same_and_full_round_trip_headers(tmp_path) -> None:
     assert full_read.times[0] == pytest.approx(full.waveform.times[0])
     assert full_read.sac_reference_time == waveform.sac_reference_time
     assert full_read.sac_trace.stats.npts == full.waveform.amplitudes.size
+
+
+def test_formal_annotation_without_compatible_adapter_is_diagnostic(tmp_path) -> None:
+    source = tmp_path / "input.sac"
+    (tmp_path / "theoretical_arrivals.csv").write_text("schema_version\n1.0.0\n", encoding="utf-8")
+    with pytest.raises(StfConvolutionError, match="phase-arrivals-src"):
+        load_input_annotation(source, "sac", str(tmp_path / "missing-src"))

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ulvz-phase-arrivals"
+version = "0.2.0"
+description = "Theoretical PREM/TauP arrivals for SPECFEM ASDF and SAC synthetics"
+requires-python = ">=3.10"
+dependencies = ["numpy", "h5py", "obspy"]
+
+[project.scripts]
+ulvz-add-phase-arrivals = "ulvz_phase_arrivals.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

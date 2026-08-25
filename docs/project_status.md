@@ -1,6 +1,6 @@
 # ULVZ SPECFEM Project Status
 
-Last updated: 2026-08-21
+Last updated: 2026-08-25
 
 This file summarizes the current state of
 the project working tree. It is based on
@@ -37,7 +37,7 @@ resolution study.
 | Two-chunk SPECFEM implementation and formal runtime continuation | The accepted project-local patch is documented at `patches/specfem3d_globe/two_chunk_endpoints/`; no production build rule changed | Fresh isolated NEX=96 patched/reversed/v8 builds completed. Patched 2/8/12-rank fingerprints match; topology has reciprocal C1/C2 two-member paths across three depths and no internal Stacey face. Reversed and clean v8 reproduce the historical `(0,1,0)` path. v3 waveform symmetry, fresh one-chunk, and rerun six-chunk regressions pass. | Current patch is formally accepted for the canonical 90° configuration: max NRMS `2.92e-6`, max relative energy difference `2.86e-6`; `canonical_90deg_fixture_ready=true`. General two-chunk classification remains B; Kim/Song Hawaiʻi production inputs remain incomplete. See `docs/two_chunk_waveform_symmetry_closure.md` and its result root. |
 | One-chunk Hawai'i/Yuan coverage audit | Source constraints, 90°–150° low-resolution width meshes, constructed-geometry search, short solver smoke, and a 20-minute solver duration run completed; no production source change | All five width meshes had positive Jacobians; final 135° source/station smoke completed with nonzero waveforms; long run completed 6500 steps | Hawai'i and individual Yuan geometry classifications are conditional on locally constructed inputs. The completed long run lacks an independent larger-domain/reference comparison to identify boundary reflections, so production-safe boundary windows remain unverified; see `docs/one_chunk_hawaii_yuan_analysis.md` |
 | One-chunk 135° boundary/domain validation | Independent 135° one-chunk and 6-chunk global meshes/runtimes, actual GLL-spacing comparison, 16 deep/shallow probes, a 120° sensitivity run, and complete-record post-processing completed; no production source change | Both 135° and global solvers completed 16,800 steps with all 17 receivers; 135° target-region spacing matches global within the recorded 15% criterion | Hawai'i remains B and `production_safe=false`. Complete-record diagnostics do not make one chunk globally equivalent: no science-window residual was uniquely attributable to a lateral boundary, probe returns are not uniquely separable, and the 120° test is spacing-confounded. See `docs/one_chunk_ulvz_simulation_assessment.md`, `docs/one_chunk_boundary_validation.md`, and timestamped results. |
-| Standalone post-run STF convolution package | implemented but not yet verified on a real fixture: v0.2.0 provides two-column ASCII, optional ObsPy SAC, and optional h5py whole-file SPECFEM ASDF (`synthetic.h5`) input/output, plus built-in and numerical STFs | The project interpreter ran all package tests: `18 passed, 2 skipped`; ASDF tests use an in-test synthetic multi-component SPECFEM-layout fixture, not a preserved solver `synthetic.h5` | Key implementation evidence: `packages/ulvz_stf_convolution/tests/test_asdf_io.py`. Validate a preserved `OUTPUT_FILES/synthetic.h5` with an independent ASDF reader before claiming real-fixture compatibility; this does not establish solver A/B equivalence. |
+| Standalone post-run STF convolution and theoretical-arrival propagation | implemented and verified: local v0.3.0 supports ASCII, optional ObsPy SAC and optional h5py whole-file SPECFEM ASDF (`synthetic.h5`) I/O, plus formal v1.1 theoretical-arrival propagation through local `ulvz_phase_arrivals` v0.2.0 | implemented and verified on preserved real `synthetic.h5`: explicit shift 0/+3 s outputs preserve Pdiff travel time/base arrival and use each actual output trace axis; latest artifact `results/real_asdf_stf_phase_spotcheck_20260825T000000Z/` | Current local-source regressions: `ulvz_phase_arrivals` 8 passed; STF 24 passed, 2 skipped. Independent third-party ASDF-reader compatibility and solver A/B equivalence remain unverified. |
 
 ## Runtime Contract
 
@@ -986,11 +986,42 @@ Provenance 与其他非波形内容，并仅在新输出文件中替换卷积后
 改变时更新 `starttime`，并按 SPECFEM 名称的秒级精度重建 dataset 时间段（亚秒级变化以
 属性为准）。功能以可选 `h5py` extra 提供，不引入 `pyasdf`，ASCII/SAC 接口保持不变。
 
-该工作流为 **implemented but not yet verified on a real fixture**。合成 SPECFEM
-ASDF fixture 覆盖多分量读取、same/full/fortran 写出、非波形内容保留、输入不变、dry-run
-和非标准命名拒绝。2026-08-21 使用
-`/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python`
-运行 `PYTHONPATH=src python -m pytest -q`，结果为 `18 passed, 2 skipped`；该解释器的
-`h5py=3.16.0`。尚未以保存的真实 SPECFEM `OUTPUT_FILES/synthetic.h5` 运行端到端写出及
-独立 ASDF-reader 回读验证，因此不能据此声明真实 ASDF fixture 兼容性或 solver A/B 等价性。
+该工作流现为 **implemented and verified**：2026-08-25 已以保存的真实
+`OUTPUT_FILES/synthetic.h5` 完成 `full` 模式端到端写出及 waveform/arrival-time 坐标抽查，
+证据为 `results/real_asdf_stf_phase_spotcheck_20260825T000000Z/`。合成 fixture 仍覆盖多分量
+读取、same/full/fortran 写出、非波形内容保留、输入不变、dry-run 和非标准命名拒绝。使用
+`/import/freenas-m-01-seismology/xjiang/software/anaconda3/envs/ulvz-specfem/bin/python`，新本地
+源码路径回归为 `ulvz_phase_arrivals` 8 passed，以及 STF 24 passed、2 skipped。该结论仅覆盖
+项目内 `h5py` 路径和保存 fixture；独立第三方 ASDF-reader 回读及 solver A/B 等价性仍未验证。
 未运行 mesher/solver，未修改 SPECFEM Fortran 源码、build rules 或 ULVZ 实现，未 commit/push。
+
+## 2026-08-25 STF convolution theoretical-arrival propagation
+
+`ulvz_phase_arrivals` 已整体迁入本项目的 `packages/ulvz_phase_arrivals/`（v0.2.0）；
+`packages/ulvz_stf_convolution/`（v0.3.0）调用其公开 annotation API。
+当输入 SAC/ASDF 附带正式 CSV 或 HDF5 theoretical-arrivals metadata 时，卷积输出会在独立的
+`<output>.theoretical_arrivals/` 目录写入派生 v1.1 annotation；输入 waveform 与 annotation
+均保持只读。派生计算仅保留既有 PREM/TauP `travel_time_s` 与物理 phase/geometry 字段，并基于
+累计 STF shift 和实际输出 trace axis 重算 effective absolute/relative arrival 坐标。没有正式
+annotation 时，原有卷积路径不变。SAC primary picks 只在 package 定义的正式标记与 sidecar 行
+共同验证后，按输出 SAC reference time 与 `b` 重定时。
+
+本次跨包测试覆盖 v1.0 reader 规范化、v1.1 writer、ASDF zero/nonzero/cumulative shift、missing
+phase、输入不变及 SAC reference-time pick retiming；迁移后以两个本地 `src` 路径运行，结果分别为
+8 passed 与 24 passed、2 skipped。未运行 SPECFEM、`bsub`、mesher 或 solver，未修改模拟结果或
+原始 waveform。
+
+## 2026-08-25 real ASDF STF annotation spot check
+
+已对 `ulvz_review/simulations/test2chunk/v02_2chunk_src01/OUTPUT_FILES/synthetic.h5`
+完成首次真实 ASDF post-run convolution 抽查。该 510-trace、10 Hz、21,200 samples/trace 的输入仅新增
+专属 Pdiff/Sdiff theoretical-arrivals sidecar；输入 waveform SHA-256 在运行前后均为
+`c9e788dc2683d6351f7397b3a40dd9fb40da08f22d2da76221ebeb62528937a3`。以 Gaussian
+half duration 0.2 s、`full` 模式分别生成 explicit shift 0 与 +3 s 的新 ASDF。对
+`AX.U100AM02p0.BXE` 的 Pdiff，`travel_time_s=822.987670883` 与 base arrival 保持不变；
+effective absolute arrival 从 `18:37:25.887671Z` 到 `18:37:28.887671Z`，实际 output trace
+starttime 从 `18:23:41.750000Z` 到 `18:23:44.750000Z`，故 waveform-relative float/nearest
+index 均为 `8241.376710/8241`。最近样点的 UTC 坐标与理论到时相差 0.037671 s，小于 0.05 s
+半样点阈值。审计输出在
+`results/real_asdf_stf_phase_spotcheck_20260825T000000Z/`。未运行 SPECFEM、`bsub`、mesher
+或 solver，未修改原始 waveform 或模拟结果。

@@ -149,7 +149,8 @@ def resample_stf(
     warnings: list[str] = []
     if max_gap > 4.0 * waveform_dt:
         raise StfConvolutionError(f"STF has an unacceptable gap ({max_gap:g} s > 4 * waveform dt)")
-    if max_gap > waveform_dt:
+    sampling_tolerance = max(1.0e-12, abs(waveform_dt) * 1.0e-9)
+    if max_gap - waveform_dt > sampling_tolerance:
         if not allow_coarse_stf:
             raise StfConvolutionError(
                 "STF is coarser than waveform dt; use --allow-coarse-stf only after accepting lost source bandwidth"

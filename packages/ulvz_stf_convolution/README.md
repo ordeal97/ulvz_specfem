@@ -1,8 +1,9 @@
 # ulvz-stf-convolution
 
 独立的、`dt` 感知的线性卷积工具，用于把震源 moment-rate function
-施加到 SPECFEM 基础波形。它不依赖本项目的任何其他 Python 包，也不需要
-SPECFEM 运行时；SPECFEM 源码仅用于其 `fortran` 兼容模式的行为基准。
+施加到 SPECFEM 基础波形。核心 ASCII/SAC/ASDF 卷积不依赖本项目的其他 Python
+package，也不需要 SPECFEM 运行时；可选的正式 theoretical-arrival propagation 使用
+`ulvz_phase_arrivals` 0.2+ 的公开 API。SPECFEM 源码仅用于其 `fortran` 兼容模式的行为基准。
 
 对于希望改变震源持续时间的合成波形，应从 `half duration = 0` 所生成的
 基础波形开始。已经以非零 half duration 运行过 solver 的波形已经含有
@@ -146,6 +147,41 @@ ulvz-convolve-stf --input base.sem.ascii --output results/custom.sem.ascii \
 每次运行在 stderr 输出 JSON 摘要：波形 `dt/npts`、STF 原始和归一化积分、
 STF 时间范围、重采样方式与警告、卷积模式、最终实际使用的 `direct` 或 `fft`
 以及输出路径。
+
+## 理论到时 annotation 传播
+
+若 SAC 或 ASDF 输入所在目录包含 `ulvz_phase_arrivals` 的正式
+`theoretical_arrivals.csv` 或 `synthetic.theoretical_arrivals.h5`，本工具会在
+`<output 文件名>.theoretical_arrivals/` 写出派生 annotation；输入 metadata 从不修改。
+CSV-only/HDF5-only 均可用，二者同时存在时必须一致。没有正式 annotation 时，行为与此前版本相同。
+
+此功能需要 `ulvz-phase-arrivals` 0.2+ 的公开 API。通常先安装该本地 package；若仅在源码树
+中可用，可显式给出其 `src` 目录：
+
+```bash
+ulvz-convolve-stf ... --phase-arrivals-src /path/to/ulvz_phase_arrivals/src
+```
+
+`--stf-time-shift` 是本次明确应用的整体偏移；duration、half duration、numeric STF 的 start、peak
+或 centroid 都不会被猜测为 time shift。派生产物保存本次 `applied_stf_time_shift_s` 与累计
+`total_stf_time_shift_s`，以 `centroid_source_time + total shift + travel_time_s` 计算绝对到时，
+并以实际 output trace starttime 重新计算 `effective_arrival_*` sample index。SAC 的正式 primary
+picks 由 `ulvz_phase_arrivals` 依据输出 reference header 和 `b` 重定时；普通 SAC picks 不会被改写。
+
+### 真实 ASDF 抽查
+
+已在真实的
+`ulvz_review/simulations/test2chunk/v02_2chunk_src01/OUTPUT_FILES/synthetic.h5` 完成整文件验证：
+510 traces、10 Hz、每 trace 21,200 samples，以 Gaussian `half-duration=0.2 s`、`full` 模式
+分别运行 `--stf-time-shift 0` 和 `--stf-time-shift 3`。输入 waveform SHA-256 在运行前后相同；
+输出、报告和派生 sidecar 位于
+`results/real_asdf_stf_phase_spotcheck_20260825T000000Z/`。
+
+抽查 `AX.U100AM02p0.BXE` 的 Pdiff：`travel_time_s=822.987670883` 和 base arrival 保持不变；
+effective absolute arrival 从 `18:37:25.887671Z` 增至 `18:37:28.887671Z`。实际 output trace
+starttime 同时相差 3 s，因此两个输出的 waveform-relative float/nearest index 都是
+`8241.376710/8241`。最近样点 UTC 坐标与理论到时相差 `0.037671 s`，小于 10 Hz 的半样点
+`0.05 s`。这验证的是 metadata 与波形时间轴的一致性，不是对波形振幅峰值的物理识别。
 
 ## `same`、`full` 与单位
 

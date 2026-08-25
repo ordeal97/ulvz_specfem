@@ -126,6 +126,17 @@ def _validate_asdf_output(source: Path, waveforms: tuple[Waveform, ...]) -> dict
     return {path: waveform for path, waveform in supplied.items() if path is not None}
 
 
+def output_dataset_paths(inputs: Iterable[Waveform], outputs: Iterable[Waveform]) -> dict[str, str]:
+    """Return the exact input-to-output ASDF dataset mapping before writing."""
+    result: dict[str, str] = {}
+    for input_waveform, output_waveform in zip(inputs, outputs, strict=True):
+        if input_waveform.asdf_dataset_path is None:
+            raise StfConvolutionError("ASDF mapping requires input dataset paths")
+        path, _start_ns = _renamed_dataset_path(output_waveform, 1.0 / input_waveform.dt, len(input_waveform.amplitudes))
+        result[input_waveform.asdf_dataset_path] = path
+    return result
+
+
 def write_asdf_waveforms(
     source_path: str | Path,
     destination_path: str | Path,

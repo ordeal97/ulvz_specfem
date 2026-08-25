@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ulvz-stf-convolution"
-version = "0.2.0"
+version = "0.3.0"
 description = "Standalone source-time-function convolution for SPECFEM base waveforms"
 readme = "README.md"
 requires-python = ">=3.11"

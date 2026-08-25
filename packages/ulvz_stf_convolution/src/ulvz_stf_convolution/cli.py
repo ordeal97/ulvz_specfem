@@ -8,10 +8,11 @@ import json
 import sys
 from pathlib import Path
 
-from .asdf import read_asdf_waveforms, write_asdf_waveforms
+from .asdf import output_dataset_paths, read_asdf_waveforms, write_asdf_waveforms
 from .convolution import convolve_waveform
 from .errors import StfConvolutionError
 from .io import _resolve_format, read_waveform, write_waveform
+from .phase_arrivals import derive_annotation, load_input_annotation, stf_provenance, write_derived_annotation
 from .stf import builtin_stf, fortran_compatible_stf, read_numeric_stf, resample_stf
 
 
@@ -33,6 +34,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--report", help="write JSON run metadata (not permitted with --dry-run)")
+    parser.add_argument("--phase-arrivals-src", help="optional ulvz_phase_arrivals source directory for formal annotation propagation")
     return parser
 
 
@@ -95,6 +97,7 @@ def _convolve_one(waveform, args):
 
 def _convolve_asdf(path: Path, destination: Path, args) -> dict:
     traces = read_asdf_waveforms(path)
+    annotation = load_input_annotation(path, "asdf", args.phase_arrivals_src)
     results = [_convolve_one(trace, args) for trace in traces]
     report = {
         "input": str(path),
@@ -116,7 +119,52 @@ def _convolve_asdf(path: Path, destination: Path, args) -> dict:
     }
     if not args.dry_run:
         write_asdf_waveforms(path, destination, [result.waveform for result in results], overwrite=args.overwrite)
+        if annotation is not None:
+            package, rows = annotation
+            expected_paths = output_dataset_paths(traces, [result.waveform for result in results])
+            actual = {trace.asdf_dataset_path: trace for trace in read_asdf_waveforms(destination)}
+            axes = []
+            for source in traces:
+                assert source.asdf_dataset_path is not None
+                output_trace = actual.get(expected_paths[source.asdf_dataset_path])
+                if output_trace is None or output_trace.asdf_starttime_ns is None:
+                    raise StfConvolutionError("ASDF output trace mapping verification failed for theoretical-arrivals propagation")
+                axes.append(package.TraceAxis(
+                    source.asdf_dataset_path, output_trace.asdf_dataset_path,
+                    output_trace.asdf_starttime_ns / 1.0e9, 1.0 / output_trace.dt,
+                    len(output_trace.amplitudes),
+                ))
+            reference, provenance = stf_provenance(results[0], args.stf_time_shift)
+            derived = derive_annotation(package, rows, axes, applied_stf_time_shift_s=args.stf_time_shift,
+                                        stf_reference=reference, stf_provenance=provenance)
+            sidecar, csv_path = write_derived_annotation(
+                package, derived, destination, applied_stf_time_shift_s=args.stf_time_shift,
+                stf_reference=reference, stf_provenance=provenance, overwrite=args.overwrite,
+            )
+            report["theoretical_arrivals"] = {"sidecar": str(sidecar), "csv": str(csv_path), "rows": len(derived)}
+    elif annotation is not None:
+        report["theoretical_arrivals"] = {"detected": True, "dry_run": True}
     return report
+
+
+def _write_sac_annotation(path: Path, destination: Path, annotation, result, args) -> dict:
+    package, rows = annotation
+    output = read_waveform(destination, format="sac")
+    if output.sac_reference_time is None or output.sac_trace is None:
+        raise StfConvolutionError("SAC output axis is unavailable for theoretical-arrivals propagation")
+    axis = package.TraceAxis(
+        str(path.resolve()), str(destination.resolve()), float(output.sac_trace.stats.starttime.timestamp),
+        1.0 / output.dt, len(output.amplitudes), float(output.sac_reference_time.timestamp),
+    )
+    reference, provenance = stf_provenance(result, args.stf_time_shift)
+    derived = derive_annotation(package, rows, [axis], applied_stf_time_shift_s=args.stf_time_shift,
+                                stf_reference=reference, stf_provenance=provenance)
+    updated = package.retime_sac_primary_picks(path, destination, derived)
+    sidecar, csv_path = write_derived_annotation(
+        package, derived, destination, applied_stf_time_shift_s=args.stf_time_shift,
+        stf_reference=reference, stf_provenance=provenance, overwrite=args.overwrite,
+    )
+    return {"sidecar": str(sidecar), "csv": str(csv_path), "rows": len(derived), "retimed_sac_primary_picks": list(updated)}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -157,12 +205,17 @@ def main(argv: list[str] | None = None) -> int:
                 print(json.dumps(report, ensure_ascii=False, sort_keys=True), file=sys.stderr)
                 continue
             waveform = read_waveform(path, format=args.input_format)
+            annotation = load_input_annotation(path, waveform.format, args.phase_arrivals_src)
             result = _convolve_one(waveform, args)
             report = _report_item(path, destination, result)
             report["input_npts"] = len(waveform.amplitudes)
             reports.append(report)
             if not args.dry_run:
                 write_waveform(result.waveform, destination, format=args.output_format, overwrite=args.overwrite)
+                if annotation is not None:
+                    report["theoretical_arrivals"] = _write_sac_annotation(path, destination, annotation, result, args)
+            elif annotation is not None:
+                report["theoretical_arrivals"] = {"detected": True, "dry_run": True}
             print(json.dumps(report, ensure_ascii=False, sort_keys=True), file=sys.stderr)
         if args.report:
             report_path = Path(args.report)

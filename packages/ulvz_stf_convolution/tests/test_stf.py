@@ -46,6 +46,12 @@ def test_numeric_coarse_and_large_gap_are_explicit(tmp_path) -> None:
         resample_stf(read_numeric_stf(large), 0.1, allow_coarse_stf=True)
 
 
+def test_shifted_builtin_grid_does_not_trigger_false_coarse_stf_error() -> None:
+    raw = builtin_stf("gaussian", 0.2, 0.1)
+    shifted = resample_stf(raw, 0.1, time_shift=3.0)
+    assert shifted.metadata["time_shift_seconds"] == pytest.approx(3.0)
+
+
 def test_numeric_rejects_zero_integral(tmp_path) -> None:
     path = tmp_path / "zero.txt"
     path.write_text("-1 -1\n0 0\n1 1\n", encoding="utf-8")
