@@ -57,20 +57,21 @@
 
   module model_s40rts_par
 
-  use model_ulvz_par, only: &
-    S40RTS_ULVZ_ENABLED => ULVZ_ENABLED, &
-    S40RTS_ULVZ_CENTER_LATITUDE_DEGREES => ULVZ_CENTER_LATITUDE_DEGREES, &
-    S40RTS_ULVZ_CENTER_LONGITUDE_DEGREES => ULVZ_CENTER_LONGITUDE_DEGREES, &
-    S40RTS_ULVZ_THICKNESS_KM => ULVZ_THICKNESS_KM, &
-    S40RTS_ULVZ_LATERAL_RADIUS_KM => ULVZ_LATERAL_RADIUS_KM, &
-    S40RTS_ULVZ_LATERAL_TAPER_KM => ULVZ_LATERAL_TAPER_KM, &
-    S40RTS_ULVZ_TOP_TAPER_KM => ULVZ_TOP_TAPER_KM, &
-    S40RTS_ULVZ_DVS => ULVZ_DVS, S40RTS_ULVZ_DVP => ULVZ_DVP, &
-    S40RTS_ULVZ_DRHO => ULVZ_DRHO, &
-    S40RTS_ULVZ_CENTER_LATITUDE_RADIANS => ULVZ_CENTER_LATITUDE_RADIANS, &
-    S40RTS_ULVZ_CENTER_LONGITUDE_RADIANS => ULVZ_CENTER_LONGITUDE_RADIANS
-
   implicit none
+
+  ! The main S40RTS path calls ulvz_apply_s40rts_overlay in model_ulvz_par.
+  ! These private variables remain only for the obsolete, uncalled local helper
+  ! routines below; they do not configure or apply a ULVZ.
+  logical :: S40RTS_ULVZ_ENABLED = .false.
+  double precision :: S40RTS_ULVZ_CENTER_LATITUDE_DEGREES = 0.d0
+  double precision :: S40RTS_ULVZ_CENTER_LONGITUDE_DEGREES = 0.d0
+  double precision :: S40RTS_ULVZ_THICKNESS_KM = 0.d0
+  double precision :: S40RTS_ULVZ_LATERAL_RADIUS_KM = 0.d0
+  double precision :: S40RTS_ULVZ_LATERAL_TAPER_KM = 0.d0
+  double precision :: S40RTS_ULVZ_TOP_TAPER_KM = 0.d0
+  double precision :: S40RTS_ULVZ_DVS = 0.d0,S40RTS_ULVZ_DVP = 0.d0,S40RTS_ULVZ_DRHO = 0.d0
+  double precision :: S40RTS_ULVZ_CENTER_LATITUDE_RADIANS = 0.d0
+  double precision :: S40RTS_ULVZ_CENTER_LONGITUDE_RADIANS = 0.d0
 
   ! three_d_mantle_model_constants
   integer, parameter :: NK_20 = 20

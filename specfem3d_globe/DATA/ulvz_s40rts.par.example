@@ -1,23 +1,23 @@
-# Optional CMB cylindrical-cap ULVZ overlay parameters.
+# Optional CMB circular-cap ULVZ overlay parameters.
 # MODEL in Par_file determines the actual background; BACKGROUND_MODEL is a
 # required audit field and must match it exactly (PREM or S40RTS).
-# Copy to DATA/ulvz_s40rts.par for an actual run; the real parameter file is not tracked here.
+# Copy to DATA/ulvz_s40rts.par for an actual run; the real parameter file is
+# not tracked here. This new-format example is an explicit baseline.
 
 BACKGROUND_MODEL = S40RTS
-ENABLED = .false.
+N_ULVZ = 0
 
-# Center location in geographic degrees. Longitude is normalized to [-180,180).
-CENTER_LATITUDE_DEGREES = 0.0
-CENTER_LONGITUDE_DEGREES = 0.0
-
-# Geometry in kilometers above the CMB and along the CMB arc.
-THICKNESS_KM = 20.0
-LATERAL_RADIUS_KM = 100.0
-LATERAL_TAPER_KM = 20.0
-TOP_TAPER_KM = 5.0
-
-# Relative perturbations. For S40RTS they are applied on top of local native
-# tomography; for PREM they scale the complete PREM material components.
-DVS = -0.20
-DVP = -0.10
-DRHO = 0.10
+# For N_ULVZ > 0, provide all nine fields for every body:
+#
+# ULVZ_1_CENTER_LATITUDE_DEGREES = 0.0
+# ULVZ_1_CENTER_LONGITUDE_DEGREES = 0.0
+# ULVZ_1_THICKNESS_KM = 20.0
+# ULVZ_1_LATERAL_RADIUS_KM = 100.0
+# ULVZ_1_LATERAL_TAPER_KM = 20.0
+# ULVZ_1_TOP_TAPER_KM = 5.0
+# ULVZ_1_DVS = -0.20
+# ULVZ_1_DVP = -0.10
+# ULVZ_1_DRHO = 0.10
+#
+# The legacy format without N_ULVZ remains accepted: it uses ENABLED plus
+# the same nine unprefixed fields. Do not mix legacy fields and N_ULVZ fields.

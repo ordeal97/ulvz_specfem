@@ -59,21 +59,12 @@ Create that file from:
 specfem3d_globe/DATA/ulvz_s40rts.par.example
 ```
 
-Required parameter keys are:
-
-```text
-BACKGROUND_MODEL
-ENABLED
-CENTER_LATITUDE_DEGREES
-CENTER_LONGITUDE_DEGREES
-THICKNESS_KM
-LATERAL_RADIUS_KM
-LATERAL_TAPER_KM
-TOP_TAPER_KM
-DVS
-DVP
-DRHO
-```
+Two runtime formats are accepted. Legacy single-body files omit `N_ULVZ` and
+use `ENABLED` plus the original nine unprefixed body fields. The extensible
+format begins with `N_ULVZ = 0, 1, ...` and supplies each complete body as
+`ULVZ_<index>_<field>`; `N_ULVZ=0` is the explicit no-ULVZ baseline.
+`N_ULVZ=1` is numerically equivalent to the enabled legacy form. The shipped
+example is a zero-body file and shows the prefixed field names.
 
 `Par_file: MODEL` chooses the actual background. `BACKGROUND_MODEL` is a
 required audit field and must be `PREM` for `1d_isotropic_prem` or
@@ -92,6 +83,13 @@ For PREM, after the complete base material is created, the mantle-side GLL
 components use `rho *= 1+w*DRHO`, `vpv/vph *= 1+w*DVP`, and
 `vsv/vsh *= 1+w*DVS`; `eta` is unchanged. `s40rts_paper` and all other
 unsupported backgrounds reject a present ULVZ parameter file.
+
+Overlapping and just-touching bodies are rejected using the implemented CMB
+circular-cap support. Each GLL/model point can therefore receive at most one
+overlay. Rank 0 writes the normalized active-body table to
+`OUTPUT_FILES/ulvz_normalized.csv`; see
+`docs/s40rts_ulvz_runtime_inputs.md` for the strict format and provenance
+schema.
 
 Minimal examples are `BACKGROUND_MODEL = S40RTS` with `MODEL = s40rts`, or
 `BACKGROUND_MODEL = PREM` with `MODEL = 1d_transversely_isotropic_prem`.

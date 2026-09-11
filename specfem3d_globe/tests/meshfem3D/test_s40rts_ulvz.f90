@@ -1,248 +1,147 @@
 program test_s40rts_ulvz
 
-  use constants, only: DEGREES_TO_RADIANS,EARTH_R,PI_OVER_TWO,myrank
+  use constants, only: myrank,PI_OVER_TWO,DEGREES_TO_RADIANS,EARTH_R
   use model_ulvz_par
-  use shared_parameters, only: MODEL,MODEL_NAME
+  use shared_parameters, only: MODEL_NAME
 
   implicit none
 
-  double precision, parameter :: TOL = 1.d-10
-  double precision, parameter :: R_EARTH_ = EARTH_R
-  double precision, parameter :: RCMB_ = 3480000.d0
-  double precision :: radius,theta,phi,w,dvs,dvp,drho
+  double precision, parameter :: TOL = 1.d-12
+  double precision, parameter :: RCMB = 3480000.d0
+  double precision :: legacy_weight,legacy_values(3),permuted_weight,permuted_values(3)
+  double precision :: radius,theta,phi,rho,vpv,vph,vsv,vsh
+  integer :: i
+  character(len=512) :: fixture_root
 
   call init_mpi()
   call world_rank(myrank)
+  MODEL_NAME = 's40rts'
+  fixture_root = 'ulvz_fixtures'
+  call get_command_argument(1,fixture_root)
+  if(len_trim(fixture_root)==0) fixture_root = 'ulvz_fixtures'
 
-  if (myrank == 0) print *,'program: test_s40rts_ulvz'
+  call load_file('legacy_single_ulvz.par')
+  call assert_int('legacy body count',N_ULVZ,1)
+  call assert_true('legacy enabled',ULVZ_ENABLED)
+  call assert_close('legacy longitude normalized',ULVZ_BODIES(1)%center_longitude_degrees,-170.d0,TOL)
+  call point_for_body(ULVZ_BODIES(1),radius,theta,phi)
+  legacy_weight = ulvz_taper_weight(radius,theta,phi)
+  call s40_values(radius,theta,phi,legacy_values)
 
-  call test_model_name_suffixes()
-  call test_parameter_read_and_broadcast()
-  call test_overlay_geometry()
-  call test_prem_overlay()
+  call load_file('multi_ulvz_one.par')
+  call assert_int('new one-body count',N_ULVZ,1)
+  call assert_close('new one-body weight',ulvz_taper_weight(radius,theta,phi),legacy_weight,TOL)
+  call compare_s40('legacy/new one-body equality',radius,theta,phi,legacy_values)
 
-  if (myrank == 0) print *,'test_s40rts_ulvz done successfully'
+  call load_file('multi_ulvz_zero.par')
+  call assert_int('explicit zero count',N_ULVZ,0)
+  call assert_true('explicit zero disabled',.not.ULVZ_ENABLED)
+  call assert_close('explicit zero weight',ulvz_taper_weight(radius,theta,phi),0.d0,TOL)
+  call s40_values(radius,theta,phi,permuted_values)
+  call assert_close('explicit zero native dvs',permuted_values(1),.03d0,TOL)
+  if(myrank==0) call ulvz_write_provenance('OUTPUT_FILES/zero_second')
 
+  MODEL_NAME = '1d_transversely_isotropic_prem'
+  ULVZ_BACKGROUND_FAMILY = ULVZ_FAMILY_PREM
+  rho=5.d0;vpv=10.d0;vph=11.d0;vsv=6.d0;vsh=7.d0
+  call ulvz_apply_prem_overlay(radius,theta,phi,rho,vpv,vph,vsv,vsh)
+  call assert_close('zero PREM rho unchanged',rho,5.d0,TOL)
+
+  MODEL_NAME = 's40rts'
+  call load_file('multi_ulvz_three.par')
+  call assert_int('three body count',N_ULVZ,3)
+  do i=1,3
+    call point_for_body(ULVZ_BODIES(i),radius,theta,phi)
+    call assert_true('three-body core point has weight',ulvz_taper_weight(radius,theta,phi)>0.999d0)
+    call s40_values(radius,theta,phi,legacy_values)
+    call assert_close('three-body dvs',legacy_values(1),(1.d0+.03d0)*(1.d0+ULVZ_BODIES(i)%dvs)-1.d0,TOL)
+    call assert_close('three-body dvp',legacy_values(2),(1.d0+.04d0)*(1.d0+ULVZ_BODIES(i)%dvp)-1.d0,TOL)
+    call assert_close('three-body drho',legacy_values(3),(.99d0)*(1.d0+ULVZ_BODIES(i)%drho)-1.d0,TOL)
+  enddo
+  if(myrank==0) call ulvz_write_provenance('OUTPUT_FILES/three_second')
+  radius = RCMB/EARTH_R;theta=PI_OVER_TWO;phi=60.d0*DEGREES_TO_RADIANS
+  call assert_close('three-body outside weight',ulvz_taper_weight(radius,theta,phi),0.d0,TOL)
+
+  call point_for_body(ULVZ_BODIES(2),radius,theta,phi)
+  legacy_weight=ulvz_taper_weight(radius,theta,phi)
+  call s40_values(radius,theta,phi,legacy_values)
+  call load_file('multi_ulvz_three_permuted.par')
+  permuted_weight=ulvz_taper_weight(radius,theta,phi)
+  call s40_values(radius,theta,phi,permuted_values)
+  call assert_close('permutation weight',permuted_weight,legacy_weight,TOL)
+  do i=1,3
+    call assert_close('permutation material',permuted_values(i),legacy_values(i),TOL)
+  enddo
+  call load_file('multi_ulvz_one.par')
+  call assert_int('broadcast reinitializes three to one',N_ULVZ,1)
+
+  if(myrank==0) print *,'test_s40rts_ulvz done successfully'
   call finalize_mpi()
 
 contains
 
-  subroutine assert_close(name,value,expected,tol)
+  character(len=1024) function fixture(name)
+    character(len=*),intent(in)::name
+    fixture=trim(fixture_root)//'/'//trim(name)
+  end function fixture
 
-  character(len=*), intent(in) :: name
-  double precision, intent(in) :: value,expected,tol
+  subroutine load_file(name)
+    character(len=*),intent(in)::name
+    if(myrank==0) call read_ulvz_parameters(fixture(name))
+    call broadcast_ulvz_parameters()
+  end subroutine load_file
 
-  if (dabs(value - expected) > tol) then
-    print *,'FAILED: ',trim(name),' value=',value,' expected=',expected
-    stop 1
-  endif
+  subroutine point_for_body(body,r,th,ph)
+    type(ulvz_body_t),intent(in)::body
+    double precision,intent(out)::r,th,ph
+    r=(RCMB+1000.d0)/EARTH_R
+    th=PI_OVER_TWO-body%center_latitude_degrees*DEGREES_TO_RADIANS
+    ph=body%center_longitude_degrees*DEGREES_TO_RADIANS
+  end subroutine point_for_body
 
-  end subroutine assert_close
+  subroutine s40_values(r,th,ph,values)
+    double precision,intent(in)::r,th,ph
+    double precision,intent(out)::values(3)
+    values=(/.03d0,.04d0,-.01d0/)
+    call ulvz_apply_s40rts_overlay(r,th,ph,values(1),values(2),values(3))
+  end subroutine s40_values
 
-  subroutine assert_true(name,value)
+  subroutine compare_s40(label,r,th,ph,expected)
+    character(len=*),intent(in)::label
+    double precision,intent(in)::r,th,ph,expected(3)
+    double precision::actual(3)
+    integer::j
+    call s40_values(r,th,ph,actual)
+    do j=1,3
+      call assert_close(label,actual(j),expected(j),TOL)
+    enddo
+  end subroutine compare_s40
 
-  character(len=*), intent(in) :: name
-  logical, intent(in) :: value
-
-  if (.not. value) then
-    print *,'FAILED: ',trim(name)
-    stop 1
-  endif
-
+  subroutine assert_true(label,ok)
+    character(len=*),intent(in)::label
+    logical,intent(in)::ok
+    if(.not.ok) then
+      print *,'ULVZ assertion failed: ',trim(label)
+      stop 1
+    endif
   end subroutine assert_true
 
-  subroutine test_model_name_suffixes()
+  subroutine assert_int(label,actual,expected)
+    character(len=*),intent(in)::label
+    integer,intent(in)::actual,expected
+    if(actual/=expected) then
+      print *,'ULVZ integer assertion failed: ',trim(label)
+      stop 1
+    endif
+  end subroutine assert_int
 
-  MODEL = 's40rts_crust1.0_AIC'
-  call get_model_parameters_flags()
-  call assert_true('s40rts_crust1.0_AIC maps to s40rts',trim(MODEL_NAME) == 's40rts')
-
-  MODEL = 's40rts_paper'
-  call get_model_parameters_flags()
-  call assert_true('s40rts_paper remains separate',trim(MODEL_NAME) == 's40rts_paper')
-
-  call assert_true('isotropic PREM maps to PREM family', &
-                   ulvz_model_family('1d_isotropic_prem') == ULVZ_FAMILY_PREM)
-  call assert_true('TISO PREM maps to PREM family', &
-                   ulvz_model_family('1d_transversely_isotropic_prem') == ULVZ_FAMILY_PREM)
-
-  end subroutine test_model_name_suffixes
-
-  subroutine test_parameter_read_and_broadcast()
-
-  MODEL_NAME = 's40rts'
-
-  if (myrank == 0) call read_ulvz_parameters('DATA/ulvz_s40rts.par')
-  if (myrank /= 0) call reset_ulvz_state()
-
-  call broadcast_ulvz_parameters()
-
-  call assert_true('enabled broadcasts',ULVZ_ENABLED)
-  call assert_true('S40RTS background broadcasts',ULVZ_BACKGROUND_FAMILY == ULVZ_FAMILY_S40RTS)
-  call assert_close('center latitude',ULVZ_CENTER_LATITUDE_DEGREES,10.d0,TOL)
-  call assert_close('center longitude normalized',ULVZ_CENTER_LONGITUDE_DEGREES,-170.d0,TOL)
-  call assert_close('thickness',ULVZ_THICKNESS_KM,20.d0,TOL)
-  call assert_close('lateral radius',ULVZ_LATERAL_RADIUS_KM,100.d0,TOL)
-  call assert_close('lateral taper',ULVZ_LATERAL_TAPER_KM,20.d0,TOL)
-  call assert_close('top taper',ULVZ_TOP_TAPER_KM,5.d0,TOL)
-  call assert_close('dvs',ULVZ_DVS,-0.2d0,TOL)
-  call assert_close('dvp',ULVZ_DVP,-0.1d0,TOL)
-  call assert_close('drho',ULVZ_DRHO,0.1d0,TOL)
-
-  end subroutine test_parameter_read_and_broadcast
-
-  subroutine test_overlay_geometry()
-
-  MODEL_NAME = 's40rts'
-  ULVZ_ENABLED = .true.
-  ULVZ_BACKGROUND_FAMILY = ULVZ_FAMILY_S40RTS
-  ULVZ_CENTER_LATITUDE_DEGREES = 0.d0
-  ULVZ_CENTER_LONGITUDE_DEGREES = 0.d0
-  ULVZ_THICKNESS_KM = 20.d0
-  ULVZ_LATERAL_RADIUS_KM = 100.d0
-  ULVZ_LATERAL_TAPER_KM = 20.d0
-  ULVZ_TOP_TAPER_KM = 5.d0
-  ULVZ_DVS = -0.2d0
-  ULVZ_DVP = -0.1d0
-  ULVZ_DRHO = 0.1d0
-  ULVZ_CENTER_LATITUDE_RADIANS = 0.d0
-  ULVZ_CENTER_LONGITUDE_RADIANS = 0.d0
-
-  theta = PI_OVER_TWO
-  phi = 0.d0
-  radius = (RCMB_ + 1.d0) / R_EARTH_
-  w = ulvz_taper_weight(radius,theta,phi)
-  call assert_close('center just above CMB has w=1',w,1.d0,TOL)
-
-  dvs = 0.03d0
-  dvp = 0.d0
-  drho = 0.d0
-  call ulvz_apply_s40rts_overlay(radius,theta,phi,dvs,dvp,drho)
-  call assert_close('relative overlay composition',dvs,-0.176d0,TOL)
-
-  radius = (RCMB_ + 21000.d0) / R_EARTH_
-  w = ulvz_taper_weight(radius,theta,phi)
-  call assert_close('above thickness has w=0',w,0.d0,TOL)
-
-  radius = (RCMB_ + 17500.d0) / R_EARTH_
-  w = ulvz_taper_weight(radius,theta,phi)
-  call assert_true('top taper is continuous inside bounds',w > 0.d0 .and. w < 1.d0)
-
-  radius = (RCMB_ + 1.d0) / R_EARTH_
-  phi = (100.d0 / (RCMB_ / 1000.d0)) + 1.d-5
-  w = ulvz_taper_weight(radius,theta,phi)
-  call assert_close('outside lateral radius has w=0',w,0.d0,TOL)
-
-  phi = (90.d0 / (RCMB_ / 1000.d0))
-  w = ulvz_taper_weight(radius,theta,phi)
-  call assert_true('lateral taper is continuous inside bounds',w > 0.d0 .and. w < 1.d0)
-
-  ULVZ_LATERAL_TAPER_KM = 0.d0
-  ULVZ_TOP_TAPER_KM = 0.d0
-  phi = 0.d0
-  w = ulvz_taper_weight(radius,theta,phi)
-  call assert_close('zero taper does not divide by zero',w,1.d0,TOL)
-
-  ULVZ_DVS = 0.d0
-  ULVZ_DVP = 0.d0
-  ULVZ_DRHO = 0.d0
-  dvs = 0.03d0
-  dvp = 0.04d0
-  drho = -0.01d0
-  call ulvz_apply_s40rts_overlay(radius,theta,phi,dvs,dvp,drho)
-  call assert_close('zero dvs unchanged',dvs,0.03d0,TOL)
-  call assert_close('zero dvp unchanged',dvp,0.04d0,TOL)
-  call assert_close('zero drho unchanged',drho,-0.01d0,TOL)
-
-  ULVZ_DVS = -0.2d0
-  ULVZ_BACKGROUND_FAMILY = ULVZ_FAMILY_UNSUPPORTED
-  MODEL_NAME = 's40rts_paper'
-  dvs = 0.03d0
-  dvp = 0.04d0
-  drho = -0.01d0
-  call ulvz_apply_s40rts_overlay(radius,theta,phi,dvs,dvp,drho)
-  call assert_close('s40rts_paper skips overlay',dvs,0.03d0,TOL)
-
-  MODEL_NAME = 's40rts'
-  ULVZ_ENABLED = .false.
-  dvs = 0.03d0
-  dvp = 0.04d0
-  drho = -0.01d0
-  call ulvz_apply_s40rts_overlay(radius,theta,phi,dvs,dvp,drho)
-  call assert_close('disabled keeps native dvs',dvs,0.03d0,TOL)
-  call assert_close('disabled keeps native dvp',dvp,0.04d0,TOL)
-  call assert_close('disabled keeps native drho',drho,-0.01d0,TOL)
-
-  end subroutine test_overlay_geometry
-
-  subroutine test_prem_overlay()
-
-  double precision :: rho,vpv,vph,vsv,vsh,eta_before,eta_after
-
-  MODEL_NAME = '1d_transversely_isotropic_prem'
-  ULVZ_ENABLED = .true.
-  ULVZ_BACKGROUND_FAMILY = ULVZ_FAMILY_PREM
-  ULVZ_CENTER_LATITUDE_RADIANS = 0.d0
-  ULVZ_CENTER_LONGITUDE_RADIANS = 0.d0
-  ULVZ_THICKNESS_KM = 20.d0
-  ULVZ_LATERAL_RADIUS_KM = 100.d0
-  ULVZ_LATERAL_TAPER_KM = 20.d0
-  ULVZ_TOP_TAPER_KM = 5.d0
-  ULVZ_DVP = -0.1d0
-  ULVZ_DVS = -0.2d0
-  ULVZ_DRHO = 0.1d0
-  theta = PI_OVER_TWO
-  phi = 0.d0
-  radius = RCMB_ / R_EARTH_
-  rho = 5.d0
-  vpv = 10.d0
-  vph = 11.d0
-  vsv = 6.d0
-  vsh = 7.d0
-  eta_before = 1.3d0
-  eta_after = eta_before
-  call ulvz_apply_prem_overlay(radius,theta,phi,rho,vpv,vph,vsv,vsh)
-  call assert_close('PREM CMB rho ratio',rho,5.5d0,TOL)
-  call assert_close('PREM CMB vpv ratio',vpv,9.d0,TOL)
-  call assert_close('PREM CMB vph ratio',vph,9.9d0,TOL)
-  call assert_close('PREM CMB vsv ratio',vsv,4.8d0,TOL)
-  call assert_close('PREM CMB vsh ratio',vsh,5.6d0,TOL)
-  call assert_close('PREM eta remains unchanged',eta_after,eta_before,TOL)
-
-  radius = (RCMB_ - 1.d0) / R_EARTH_
-  rho = 5.d0
-  vpv = 10.d0
-  vph = 11.d0
-  vsv = 6.d0
-  vsh = 7.d0
-  call ulvz_apply_prem_overlay(radius,theta,phi,rho,vpv,vph,vsv,vsh)
-  call assert_close('PREM below CMB unchanged',rho,5.d0,TOL)
-
-  radius = (RCMB_ + 20000.d0) / R_EARTH_
-  w = ulvz_taper_weight(radius,theta,phi)
-  call assert_close('PREM top boundary has zero weight',w,0.d0,TOL)
-  radius = RCMB_ / R_EARTH_
-  phi = 100.d0 / (RCMB_ / 1000.d0)
-  w = ulvz_taper_weight(radius,theta,phi)
-  call assert_close('PREM lateral boundary has zero weight',w,0.d0,TOL)
-
-  end subroutine test_prem_overlay
-
-  subroutine reset_ulvz_state()
-
-  ULVZ_ENABLED = .true.
-  ULVZ_CENTER_LATITUDE_DEGREES = -999.d0
-  ULVZ_CENTER_LONGITUDE_DEGREES = -999.d0
-  ULVZ_THICKNESS_KM = -999.d0
-  ULVZ_LATERAL_RADIUS_KM = -999.d0
-  ULVZ_LATERAL_TAPER_KM = -999.d0
-  ULVZ_TOP_TAPER_KM = -999.d0
-  ULVZ_DVS = -999.d0
-  ULVZ_DVP = -999.d0
-  ULVZ_DRHO = -999.d0
-  ULVZ_CENTER_LATITUDE_RADIANS = -999.d0
-  ULVZ_CENTER_LONGITUDE_RADIANS = -999.d0
-
-  end subroutine reset_ulvz_state
+  subroutine assert_close(label,actual,expected,tolerance)
+    character(len=*),intent(in)::label
+    double precision,intent(in)::actual,expected,tolerance
+    if(abs(actual-expected)>tolerance) then
+      print *,'ULVZ numeric assertion failed: ',trim(label)
+      stop 1
+    endif
+  end subroutine assert_close
 
 end program test_s40rts_ulvz

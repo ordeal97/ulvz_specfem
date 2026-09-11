@@ -84,19 +84,21 @@ program audit_prem_ulvz_materials
 contains
 
   subroutine configure_ulvz()
-    ULVZ_ENABLED = .true.
+    call ulvz_clear_state()
     ULVZ_BACKGROUND_FAMILY = ULVZ_FAMILY_PREM
-    ULVZ_CENTER_LATITUDE_DEGREES = 45.d0
-    ULVZ_CENTER_LONGITUDE_DEGREES = 140.d0
-    ULVZ_CENTER_LATITUDE_RADIANS = ULVZ_CENTER_LATITUDE_DEGREES * DEGREES_TO_RADIANS
-    ULVZ_CENTER_LONGITUDE_RADIANS = ULVZ_CENTER_LONGITUDE_DEGREES * DEGREES_TO_RADIANS
-    ULVZ_THICKNESS_KM = THICKNESS_KM
-    ULVZ_LATERAL_RADIUS_KM = LATERAL_RADIUS_KM
-    ULVZ_LATERAL_TAPER_KM = LATERAL_TAPER_KM
-    ULVZ_TOP_TAPER_KM = TOP_TAPER_KM
-    ULVZ_DVS = DVS
-    ULVZ_DVP = DVP
-    ULVZ_DRHO = DRHO
+    N_ULVZ = 1
+    ULVZ_ENABLED = .true.
+    allocate(ULVZ_BODIES(1))
+    ULVZ_BODIES(1)%center_latitude_degrees = 45.d0
+    ULVZ_BODIES(1)%center_longitude_degrees = 140.d0
+    ULVZ_BODIES(1)%thickness_km = THICKNESS_KM
+    ULVZ_BODIES(1)%lateral_radius_km = LATERAL_RADIUS_KM
+    ULVZ_BODIES(1)%lateral_taper_km = LATERAL_TAPER_KM
+    ULVZ_BODIES(1)%top_taper_km = TOP_TAPER_KM
+    ULVZ_BODIES(1)%dvs = DVS
+    ULVZ_BODIES(1)%dvp = DVP
+    ULVZ_BODIES(1)%drho = DRHO
+    call ulvz_normalize_bodies()
   end subroutine configure_ulvz
 
   subroutine initialize_points(values)
@@ -211,8 +213,8 @@ contains
     record%height_km = (record%radius * EARTH_R - RCMB_M) / 1000.d0
     lat = PI_OVER_TWO - record%theta
     lon = modulo(record%phi + PI,2.d0*PI) - PI
-    cosang = dsin(lat)*dsin(ULVZ_CENTER_LATITUDE_RADIANS) + &
-             dcos(lat)*dcos(ULVZ_CENTER_LATITUDE_RADIANS) * dcos(lon-ULVZ_CENTER_LONGITUDE_RADIANS)
+    cosang = dsin(lat)*dsin(ULVZ_BODIES(1)%center_latitude_radians) + &
+             dcos(lat)*dcos(ULVZ_BODIES(1)%center_latitude_radians) * dcos(lon-ULVZ_BODIES(1)%center_longitude_radians)
     cosang = max(-1.d0,min(1.d0,cosang))
     record%lateral_km = (RCMB_M/1000.d0) * dacos(cosang)
     record%weight = ulvz_taper_weight(record%radius,record%theta,record%phi)
@@ -233,8 +235,8 @@ contains
     record%source = 'exact_probe'
     record%radius = (RCMB_M + 1000.d0*height_km) / EARTH_R
     ! A meridional displacement is a great-circle distance by construction.
-    record%theta = PI_OVER_TWO - ULVZ_CENTER_LATITUDE_RADIANS - lateral_km / (RCMB_M/1000.d0)
-    record%phi = ULVZ_CENTER_LONGITUDE_RADIANS
+    record%theta = PI_OVER_TWO - ULVZ_BODIES(1)%center_latitude_radians - lateral_km / (RCMB_M/1000.d0)
+    record%phi = ULVZ_BODIES(1)%center_longitude_radians
     record%height_km = height_km
     record%lateral_km = lateral_km
     record%weight = ulvz_taper_weight(record%radius,record%theta,record%phi)
@@ -310,8 +312,8 @@ contains
     vsv = 6.d0
     vsh = 7.d0
     eta = 1.3d0
-    call ulvz_apply_prem_overlay((RCMB_M+1000.d0)/EARTH_R,PI_OVER_TWO-ULVZ_CENTER_LATITUDE_RADIANS, &
-      ULVZ_CENTER_LONGITUDE_RADIANS,rho,vpv,vph,vsv,vsh)
+    call ulvz_apply_prem_overlay((RCMB_M+1000.d0)/EARTH_R,PI_OVER_TWO-ULVZ_BODIES(1)%center_latitude_radians, &
+      ULVZ_BODIES(1)%center_longitude_radians,rho,vpv,vph,vsv,vsh)
     ratio = (/rho/5.d0,vpv/10.d0,vph/11.d0,vsv/6.d0,vsh/7.d0,eta/1.3d0/)
     expected = (/1.d0+DRHO,1.d0+DVP,1.d0+DVP,1.d0+DVS,1.d0+DVS,1.d0/)
     ok = maxval(dabs(ratio-expected)) <= TOL
